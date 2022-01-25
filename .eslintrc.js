@@ -1,5 +1,5 @@
 // https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/README.md
-module.exports = {
+export default {
   root: true,
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
