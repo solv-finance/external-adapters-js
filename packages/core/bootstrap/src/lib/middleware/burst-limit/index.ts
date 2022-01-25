@@ -1,4 +1,4 @@
-import { Middleware } from '@chainlink/types'
+import { Middleware } from '../../types'
 import { Store } from 'redux'
 import {
   BurstLimitState,
@@ -38,6 +38,9 @@ const availableSecondLimitCapacity = async (
   return false
 }
 
+/**
+  Prevents Adapters from requesting a data provider more times than their **second** and **minute** API limits allow.
+*/
 export const withBurstLimit =
   (store?: Store<BurstLimitState>): Middleware =>
   async (execute, context) =>

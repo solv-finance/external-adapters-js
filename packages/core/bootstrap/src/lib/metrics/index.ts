@@ -1,8 +1,10 @@
 import * as client from 'prom-client'
 import { parseBool } from '../util'
-import { WARMUP_REQUEST_ID } from '../middleware/cache-warmer/config'
 import * as util from './util'
-import { Middleware, AdapterRequest, AdapterMetricsMeta } from '@chainlink/types'
+import type types from '../types'
+import * as cacheWarmer from '../middleware/cache-warmer'
+
+export const METRICS_ENABLED = parseBool(process.env.EXPERIMENTAL_METRICS_ENABLED)
 
 export const setupMetrics = (name: string): void => {
   client.collectDefaultMetrics()
@@ -12,7 +14,54 @@ export const setupMetrics = (name: string): void => {
   })
 }
 
-export const METRICS_ENABLED = parseBool(process.env.EXPERIMENTAL_METRICS_ENABLED)
+export const withMetrics: types.Middleware =
+  async (execute, context) => async (input: types.AdapterRequest) => {
+    const feedId = util.getFeedId(input)
+    const metricsMeta: types.AdapterMetricsMeta = {
+      feedId,
+    }
+
+    const recordMetrics = () => {
+      const labels: Parameters<typeof httpRequestsTotal.labels>[0] = {
+        is_cache_warming: String(input.id === cacheWarmer.WARMUP_REQUEST_ID),
+        method: 'POST',
+        feed_id: feedId,
+      }
+      const end = httpRequestDurationSeconds.startTimer()
+
+      return (props: {
+        providerStatusCode?: number
+        statusCode?: number
+        type?: HttpRequestType
+      }) => {
+        labels.type = props.type
+        labels.status_code = util.normalizeStatusCode(props.statusCode)
+        labels.provider_status_code = util.normalizeStatusCode(props.providerStatusCode)
+        end()
+        httpRequestsTotal.labels(labels).inc()
+      }
+    }
+
+    const record = recordMetrics()
+    try {
+      const result = await execute({ ...input, metricsMeta }, context)
+      record({
+        statusCode: result.statusCode,
+        type: result.data.maxAge ? HttpRequestType.CACHE_HIT : HttpRequestType.DATA_PROVIDER_HIT,
+      })
+      return { ...result, metricsMeta: { ...result.metricsMeta, ...metricsMeta } }
+    } catch (error) {
+      const providerStatusCode: number | undefined = error.cause?.response?.status
+      record({
+        statusCode: providerStatusCode ? 200 : 500,
+        providerStatusCode,
+        type: providerStatusCode
+          ? HttpRequestType.DATA_PROVIDER_HIT
+          : HttpRequestType.ADAPTER_ERROR,
+      })
+      throw error
+    }
+  }
 
 export const withMetrics: Middleware =
   async (execute, context) => async (input: AdapterRequest) => {

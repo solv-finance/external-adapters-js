@@ -1,5 +1,5 @@
 import { getRandomRequiredEnv, getRandomEnv, getEnv } from '../util'
-import { Config } from '@chainlink/types'
+import { Config } from '../types'
 import { logger } from '../modules/logger'
 
 const ENV_API_KEY = 'API_KEY'

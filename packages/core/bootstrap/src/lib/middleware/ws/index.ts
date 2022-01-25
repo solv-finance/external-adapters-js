@@ -4,7 +4,7 @@ import {
   AdapterResponse,
   MakeWSHandler,
   Middleware,
-} from '@chainlink/types'
+} from '../../types'
 import { Store } from 'redux'
 import { connectRequested, subscribeRequested, WSSubscriptionPayload } from './actions'
 import { getWSConfig } from './config'

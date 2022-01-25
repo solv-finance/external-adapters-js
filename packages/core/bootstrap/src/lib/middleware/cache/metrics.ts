@@ -10,7 +10,11 @@ export const beginObserveCacheMetrics = ({
   participantId,
   feedId,
   isFromWs,
-}: CacheExecutionDurationParams) => {
+}: CacheExecutionDurationParams): {
+  stalenessAndExecutionTime(cacheHit: boolean, staleness?: number): number
+  cacheGet({ value }: { value: unknown }): void
+  cacheSet({ statusCode, maxAge }: { statusCode: number; maxAge: number }): void
+} => {
   const cacheType = process.env.CACHE_TYPE === 'redis' ? CacheTypes.Redis : CacheTypes.Local
   const base = {
     feed_id: feedId,

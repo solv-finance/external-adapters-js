@@ -1,8 +1,8 @@
 import { omit } from 'lodash'
 import { WarmupExecutePayload, WarmupSubscribedPayload } from './actions'
 import { get } from './config'
-import { BatchableProperty, SubscriptionData } from './reducer'
-import { AdapterRequest, AdapterResponse } from '@chainlink/types'
+import { SubscriptionData } from './reducer'
+import { AdapterRequestData, AdapterResponse, BatchableProperty } from '../../types'
 import { hash } from '../../util'
 
 const conf = get()
@@ -36,7 +36,7 @@ type GroupedBatches = {
 
 function groupBatchesByPath(
   batchablePropertyPath: BatchableProperty[],
-  origin: AdapterRequest['data'],
+  origin: AdapterRequestData,
 ): GroupedBatches {
   const batchesByPath: GroupedBatches = {}
   for (const { name, limit } of batchablePropertyPath) {

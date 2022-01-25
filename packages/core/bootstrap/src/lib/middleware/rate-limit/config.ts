@@ -1,7 +1,7 @@
 import { getRateLimit, getHTTPLimit } from '../../config/provider-limits'
 import { getEnv, parseBool } from '../../util'
 import { logger } from '../../modules'
-import { AdapterContext } from '@chainlink/types'
+import { AdapterContext } from '../../types'
 import { DEFAULT_CACHE_ENABLED } from '../cache'
 
 export const DEFAULT_RATE_LIMIT_ENABLED = true

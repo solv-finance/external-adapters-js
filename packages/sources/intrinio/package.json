@@ -28,7 +28,6 @@
     "start": "yarn server:dist"
   },
   "devDependencies": {
-    "@chainlink/types": "workspace:*",
     "@types/jest": "27.0.3",
     "@types/node": "16.11.19",
     "typescript": "4.3.5"

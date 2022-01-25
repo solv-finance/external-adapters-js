@@ -1,7 +1,9 @@
-import { AdapterContext, AdapterRequest, AdapterResponse, InputParameters } from '@chainlink/types'
+import  from '@chainlink/types'
 import { Config } from '../../config'
 import * as view from '@chainlink/terra-view-function-adapter'
 import { Validator } from '@chainlink/ea-bootstrap'
+import { types } from '@chainlink/ea-bootstrap'
+const {AdapterContext, AdapterRequest, AdapterResponse, InputParameters} = types
 
 export const FROM = 'BLUNA'
 export const INTERMEDIARY_TOKEN_DECIMALS = 8

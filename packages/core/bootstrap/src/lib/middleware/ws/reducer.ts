@@ -1,4 +1,4 @@
-import { AdapterContext, AdapterRequest } from '@chainlink/types'
+import { AdapterContext, AdapterRequest, UnknownWSMessage } from '../../types'
 import { combineReducers, createReducer, isAnyOf } from '@reduxjs/toolkit'
 import { logger } from '../../modules'
 import { getHashOpts, hash } from '../../util'
@@ -17,7 +17,7 @@ import * as actions from './actions'
  * The structure of which may change with every adapter, so we need to
  * use exclude mode to handle dynamically changing properties.
  */
-export const getSubsId = (subscriptionMsg: AdapterRequest): string =>
+export const getSubsId = (subscriptionMsg: UnknownWSMessage | AdapterRequest): string =>
   hash(subscriptionMsg, getHashOpts(), 'exclude')
 
 export interface ConnectionsState {
@@ -137,7 +137,7 @@ export interface SubscriptionsState {
       subscribing: number
       input: AdapterRequest
       context: AdapterContext
-      subscriptionParams?: any
+      subscriptionParams?: Record<string, unknown>
       connectionKey: string
       shouldNotRetry?: boolean
       lastUpdatedAt?: number

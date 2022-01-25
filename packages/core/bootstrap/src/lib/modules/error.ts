@@ -1,4 +1,4 @@
-import { AdapterErrorResponse } from '@chainlink/types'
+import { AdapterErrorResponse } from '../types'
 
 export class AdapterError extends Error {
   jobRunID: string

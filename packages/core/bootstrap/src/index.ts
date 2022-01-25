@@ -1,21 +1,12 @@
-import {
-  AdapterRequest,
-  AdapterContext,
-  Execute,
-  ExecuteSync,
-  MakeWSHandler,
-  Middleware,
-  APIEndpoint,
-  Callback,
-  Config,
-} from '@chainlink/types'
+import type types from './lib/types'
 import { combineReducers, Store } from 'redux'
-import { Cache, withCache } from './lib/middleware/cache'
-import * as cacheWarmer from './lib/middleware/cache-warmer'
 import { AdapterError, logger as Logger, HTTP, Validator, Builder } from './lib/modules'
+import Cache from './lib/middleware/cache'
 import * as metrics from './lib/metrics'
 import * as RateLimit from './lib/middleware/rate-limit'
 import * as burstLimit from './lib/middleware/burst-limit'
+import * as cacheWarmer from './lib/middleware/cache-warmer'
+import * as ws from './lib/middleware/ws'
 import * as ioLogger from './lib/middleware/io-logger'
 import * as statusCode from './lib/middleware/status-code'
 import * as debug from './lib/middleware/debugger'
@@ -23,8 +14,6 @@ import * as normalize from './lib/middleware/normalize'
 import * as server from './lib/server'
 import { configureStore } from './lib/store'
 import * as util from './lib/util'
-import * as ws from './lib/middleware/ws'
-import http from 'http'
 
 const REDUX_MIDDLEWARE = ['burstLimit', 'cacheWarmer', 'rateLimit', 'ws'] as const
 type ReduxMiddleware = typeof REDUX_MIDDLEWARE[number]
@@ -55,13 +44,13 @@ export const storeSlice = (slice: ReduxMiddleware): Store =>
     dispatch: (a) => store.dispatch(a),
   } as Store)
 
-export const makeMiddleware = <C extends Config>(
-  execute: Execute,
-  makeWsHandler?: MakeWSHandler,
-  endpointSelector?: (request: AdapterRequest) => APIEndpoint<C>,
-): Middleware[] => {
+export const makeMiddleware = <C extends types.Config>(
+  execute: types.Execute,
+  makeWsHandler?: types.MakeWSHandler,
+  endpointSelector?: (request: types.AdapterRequest) => types.APIEndpoint<C>,
+): types.Middleware[] => {
   const warmerMiddleware = [
-    withCache(storeSlice('burstLimit')),
+    Cache.withCache(storeSlice('burstLimit')),
     RateLimit.withRateLimit(storeSlice('rateLimit')),
     statusCode.withStatusCode,
     normalize.withNormalizedInput(endpointSelector),
@@ -69,7 +58,7 @@ export const makeMiddleware = <C extends Config>(
 
   return [
     ioLogger.withIOLogger,
-    withCache(storeSlice('burstLimit')),
+    Cache.withCache(storeSlice('burstLimit')),
     cacheWarmer.withCacheWarmer(storeSlice('cacheWarmer'), warmerMiddleware, {
       store: storeSlice('ws'),
       makeWSHandler: makeWsHandler,
@@ -83,10 +72,10 @@ export const makeMiddleware = <C extends Config>(
 
 // Wrap raw Execute function with middleware
 export const withMiddleware = async (
-  execute: Execute,
-  context: AdapterContext,
-  middleware: Middleware[],
-): Promise<Execute> => {
+  execute: types.Execute,
+  context: types.AdapterContext,
+  middleware: types.Middleware[],
+): Promise<types.Execute> => {
   // Init and wrap middleware one by one
   for (let i = 0; i < middleware.length; i++) {
     execute = await middleware[i](execute, context)
@@ -95,11 +84,11 @@ export const withMiddleware = async (
 }
 
 // Execution helper async => sync
-export const executeSync: ExecuteSync = async (
-  data: AdapterRequest,
-  execute: Execute,
-  context: AdapterContext,
-  callback: Callback,
+export const executeSync: types.ExecuteSync = async (
+  data: types.AdapterRequest,
+  execute: types.Execute,
+  context: types.AdapterContext,
+  callback: types.Callback,
 ) => {
   try {
     const result = await execute(data, context)
@@ -114,22 +103,12 @@ export const executeSync: ExecuteSync = async (
   }
 }
 
-export type ExternalAdapter = {
-  execute: Execute
-  makeWsHandler?: MakeWSHandler
-  endpointSelector?: (request: AdapterRequest) => APIEndpoint
-}
-
-export type ExecuteHandler = {
-  server: () => Promise<http.Server>
-}
-
-export const expose = <C extends Config>(
+export const expose = <C extends types.Config>(
   name: string,
-  execute: Execute,
-  makeWsHandler?: MakeWSHandler,
-  endpointSelector?: (request: AdapterRequest) => APIEndpoint<C>,
-): ExecuteHandler => {
+  execute: types.Execute,
+  makeWsHandler?: types.MakeWSHandler,
+  endpointSelector?: (request: types.AdapterRequest) => types.APIEndpoint<C>,
+): types.ExecuteHandler => {
   const middleware = makeMiddleware(execute, makeWsHandler, endpointSelector)
   return {
     server: server.initHandler(name, execute, middleware),

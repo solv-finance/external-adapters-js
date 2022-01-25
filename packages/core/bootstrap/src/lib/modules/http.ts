@@ -1,12 +1,13 @@
 import {
   AdapterErrorResponse,
+  BatchedResult,
   AdapterResponse,
-  RequestConfig,
+  AxiosRequestConfig,
   AdapterRequest,
   AdapterRequestData,
   ResultPath,
-} from '@chainlink/types'
-import { reducer } from '../middleware/cache-warmer'
+  BatchableProperty,
+} from '../types'
 import axios, { AxiosResponse } from 'axios'
 import { deepType } from '../util'
 import { getDefaultConfig, logConfig } from '../config'
@@ -21,7 +22,7 @@ const DEFAULT_RETRY = 1
 
 export class HTTP {
   static async request<T extends AdapterRequestData>(
-    config: RequestConfig,
+    config: AxiosRequestConfig,
     customError?: any,
     retries = Number(process.env.RETRY) || DEFAULT_RETRY,
     delay = 1000,
@@ -183,7 +184,7 @@ export class HTTP {
     jobRunID = '1',
     response: Partial<AxiosResponse>,
     verbose = false,
-    batchablePropertyPath?: reducer.BatchableProperty[],
+    batchablePropertyPath?: BatchableProperty[],
   ): AdapterResponse {
     const debug = batchablePropertyPath ? { batchablePropertyPath } : undefined
 
@@ -224,31 +225,6 @@ export class HTTP {
  */
 interface SingleResult {
   result?: number | string
-}
-
-/**
- * Contained within the body of an api response
- * from a request that asked for multiple data points
- *
- * @example Request Parameters
- * ```
- * {
- *  "data": {
- *      "base": "ETH,BTC",
- *      "quote": "USD"
- *   }
- *}
- * ```
- */
-interface BatchedResult {
-  /**
-   * Tuples for
-   * [
-   *    its input parameters as a single request (used in caching),
-   *    its result
-   * ]
-   */
-  results?: [AdapterRequest, number][]
 }
 
 /**

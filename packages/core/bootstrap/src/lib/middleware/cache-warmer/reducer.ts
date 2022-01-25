@@ -1,14 +1,9 @@
-import { AdapterRequest, Execute } from '@chainlink/types'
+import { AdapterRequest, AdapterRequestData, AdapterResponse, BatchableProperty } from '../../types'
 import { combineReducers, createReducer } from '@reduxjs/toolkit'
 import { logger } from '../../modules'
 import * as actions from './actions'
 import { getSubscriptionKey } from './util'
 import { merge, uniq } from 'lodash'
-
-export interface BatchableProperty {
-  name: string
-  limit?: number
-}
 
 /**
  * Metadata about a request
@@ -21,7 +16,7 @@ export interface SubscriptionData {
   /**
    * The wrapped execute function that was used to service the request
    */
-  executeFn: Execute
+  executeFn: (input: AdapterRequest) => Promise<AdapterResponse>
   /**
    * The time this subscription started in unix time
    */
@@ -163,9 +158,9 @@ export const subscriptionsReducer = createReducer<SubscriptionState>({}, (builde
 
     // Rebuild the overrides
     const overrides = remainingChildIds.reduce<{
-      overrides?: Record<string, string>
-      tokenOverrides?: Record<string, string>
-      includes?: string[]
+      overrides?: AdapterRequestData['overrides']
+      tokenOverrides?: AdapterRequestData['tokenOverrides']
+      includes?: AdapterRequestData['includes']
     }>((acc, childId) => {
       const childOriginData = state[childId].origin
       if (childOriginData.overrides)

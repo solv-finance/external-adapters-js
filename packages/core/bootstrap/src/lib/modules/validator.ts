@@ -8,7 +8,7 @@ import {
   InputParameter,
   InputParameters,
   Config,
-} from '@chainlink/types'
+} from '../types'
 import { merge } from 'lodash'
 import { isArray, isObject } from '../util'
 import { AdapterError } from './error'

@@ -1,4 +1,4 @@
-import { AdapterContext, Execute, Middleware } from '@chainlink/types'
+import { AdapterContext, Execute, Middleware } from './types'
 import express from 'express'
 import http from 'http'
 import slowDown from 'express-slow-down'
