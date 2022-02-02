@@ -1,100 +1,152 @@
 # Chainlink CoinPaprika External Adapter
 
-### Environment Variables
-
-| Required? |     Name     |                                                   Description                                                   | Options | Defaults to |
-| :-------: | :----------: | :-------------------------------------------------------------------------------------------------------------: | :-----: | :---------: |
-|           |   API_KEY    |                       An API key that can be obtained from the data provider's dashboard                        |         |             |
-|           | IS_TEST_MODE | Whether or not the Coinpaprika API is running in testmode. This will be removed once their API is in production |         |             |
-
-### Input Parameters
-
-| Required? |   Name   |     Description     |                                                                                                        Options                                                                                                         | Defaults to |
-| :-------: | :------: | :-----------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :---------: |
-|           | endpoint | The endpoint to use | [crypto](#Crypto-Endpoint), [dominance](#Dominance-Endpoint), [globalmarketcap](#Global-Market-Capitalization-Endpoint), [marketcap](#Marketcap-Endpoint), [volume](#Volume-Endpoint), crypto-single, marketcap-single |  `crypto`   |
+Version: 1.2.0
 
 _Note: the `-single` endpoints have the same functionality as their original endpoint, except they will only fetch data for the single asset being queried._
+
+This README was generated automatically. Please see [scripts](../../scripts) for more info.
+
+## Environment Variables
+
+| Required? |     Name     | Description | Type | Options | Default |
+| :-------: | :----------: | :---------: | :--: | :-----: | :-----: |
+|           |   API_KEY    |             |      |         |         |
+|           | IS_TEST_MODE |             |      |         |         |
+
+---
+
+## Input Parameters
+
+| Required? |   Name   |     Description     |  Type  |                                                                                                          Options                                                                                                           | Default  |
+| :-------: | :------: | :-----------------: | :----: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :------: |
+|           | endpoint | The endpoint to use | string | [coins](#coins-endpoint), [crypto](#crypto-endpoint), [dominance](#dominance-endpoint), [globalmarketcap](#globalmarketcap-endpoint), [marketcap](#crypto-endpoint), [price](#crypto-endpoint), [volume](#crypto-endpoint) | `crypto` |
 
 ---
 
 ## Crypto Endpoint
 
-##### NOTE: the `price` endpoint is temporarily still supported, however, is being deprecated. Please use the `crypto` endpoint instead.
+The `marketcap` endpoint fetches market cap of assets, the `volume` endpoint fetches 24-hour volume of assets, and the `crypto`/`price` endpoint fetches current price of asset pairs (https://api.coinpaprika.com/v1/tickers/`{COIN}`).
 
-https://api.coinpaprika.com/v1/tickers/`{COIN}`
+**NOTE: the `price` endpoint is temporarily still supported, however, is being deprecated. Please use the `crypto` endpoint instead.**
+
+Supported names for this endpoint are: `crypto`, `marketcap`, `price`, `volume`.
 
 ### Input Params
 
-| Required? |          Name           |                        Description                        |                                       Options                                        | Defaults to |
-| :-------: | :---------------------: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------: | :---------: |
-|    ✅     | `base`, `from`, `coin`  |            The symbol of the currency to query            |                                                                                      |             |
-|    ✅     | `quote`, `to`, `market` |         The symbol of the currency to convert to          |                                                                                      |             |
-|    🟡     |        `coinid`         |     The coin ID (optional to use in place of `base`)      |                                                                                      |             |
-|    🟡     |       `overrides`       | If base provided is found in overrides, that will be used | [Format](../../core/bootstrap/src/lib/external-adapter/overrides/presetSymbols.json) |             |
+| Required? |  Name  |    Aliases     |                   Description                    |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :----: | :------------: | :----------------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     |  base  | `coin`, `from` |       The symbol of the currency to query        |        |         |         |            |                |
+|    ✅     | quote  | `market`, `to` |     The symbol of the currency to convert to     |        |         |         |            |                |
+|           | coinid |                | The coin ID (optional to use in place of `base`) | string |         |         |            |                |
 
-### Sample Input
+### Example
+
+Request:
 
 ```json
 {
   "id": "1",
   "data": {
+    "endpoint": "crypto",
+    "resultPath": "price",
     "base": "ETH",
     "quote": "USD"
   }
 }
 ```
 
-### Sample Output
+Response:
 
 ```json
 {
-  "jobRunID": "278c97ffadb54a5bbb93cfec5f7b5503",
-  "data": {
-    "id": "eth-ethereum",
-    "name": "Ethereum",
-    "symbol": "ETH",
-    "rank": 2,
-    "circulating_supply": 109469522,
-    "total_supply": 109469556,
-    "max_supply": 0,
-    "beta_value": 1.04048,
-    "last_updated": "2020-01-28T21:56:03Z",
-    "quotes": {
-      "USD": {
-        "price": 173.00001891,
-        "volume_24h": 8256159044.3763,
-        "volume_24h_change_24h": 2.54,
-        "market_cap": 18938229376,
-        "market_cap_change_24h": 0.93,
-        "percent_change_1h": 0.27,
-        "percent_change_12h": 1.04,
-        "percent_change_24h": 0.92,
-        "percent_change_7d": 2.18,
-        "percent_change_30d": 27.49,
-        "percent_change_1y": 64.2,
-        "ath_price": 1432.88,
-        "ath_date": "2018-01-13T21:04:00Z",
-        "percent_from_price_ath": -87.93
-      }
-    },
-    "result": 173.00001891
-  },
-  "result": 173.00001891,
-  "statusCode": 200
+  "result": 3949.2425813062
 }
 ```
+
+<details>
+<summary>Additional Examples</summary>
+
+Request:
+
+```json
+{
+  "id": "1",
+  "data": {
+    "endpoint": "marketcap",
+    "resultPath": "market_cap",
+    "base": "ETH",
+    "quote": "USD"
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "result": 466143026900
+}
+```
+
+Request:
+
+```json
+{
+  "id": "1",
+  "data": {
+    "endpoint": "volume",
+    "resultPath": "volume_24h",
+    "base": "ETH",
+    "quote": "USD"
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "result": 24136641726.138
+}
+```
+
+</details>
+
+---
+
+## CryptoSingle Endpoint
+
+There are no supported names for this endpoint.
+
+### Input Params
+
+| Required? |  Name  |    Aliases     |                   Description                    |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :----: | :------------: | :----------------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     |  base  | `coin`, `from` |       The symbol of the currency to query        | string |         |         |            |                |
+|    ✅     | quote  | `market`, `to` |     The symbol of the currency to convert to     | string |         |         |            |                |
+|           | coinid |                | The coin ID (optional to use in place of `base`) | string |         |         |            |                |
+
+### Example
+
+There are no examples for this endpoint.
+
+---
 
 ## Dominance Endpoint
 
 Returns Bitcoin's dominance from the [global endpoint](https://api.coinpaprika.com/v1/global)
 
+`dominance` is the only supported name for this endpoint.
+
 ### Input Params
 
-| Required? |          Name           |             Description             | Options | Defaults to |
-| :-------: | :---------------------: | :---------------------------------: | :-----: | :---------: |
-|    ✅     | `quote`, `to`, `market` | The symbol of the currency to query |  `BTC`  |             |
+| Required? |  Name  |    Aliases    |               Description                |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :----: | :-----------: | :--------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | market | `quote`, `to` | The symbol of the currency to convert to | string |         |         |            |                |
 
-### Sample Input
+### Example
+
+Request:
 
 ```json
 {
@@ -106,41 +158,31 @@ Returns Bitcoin's dominance from the [global endpoint](https://api.coinpaprika.c
 }
 ```
 
-### Sample Output
+Response:
 
 ```json
 {
-  "jobRunID": "1",
-  "data": {
-    "market_cap_usd": 368198248292,
-    "volume_24h_usd": 59351367068,
-    "bitcoin_dominance_percentage": 59.98,
-    "cryptocurrencies_number": 2435,
-    "market_cap_ath_value": 835692000000,
-    "market_cap_ath_date": "2018-01-07T11:17:00Z",
-    "volume_24h_ath_value": 197699715619,
-    "volume_24h_ath_date": "2020-03-13T10:00:00Z",
-    "volume_24h_percent_from_ath": -69.98,
-    "volume_24h_percent_to_ath": 233.1,
-    "market_cap_change_24h": -0.2,
-    "volume_24h_change_24h": 16.98,
-    "last_updated": 1603238207,
-    "result": 59.98
-  },
-  "result": 59.98,
-  "statusCode": 200
+  "result": 44.68
 }
 ```
 
-## Global Market Capitalization Endpoint
+---
+
+## GlobalMarketcap Endpoint
 
 Returns the global market capitilization from the [global endpoint](https://api.coinpaprika.com/v1/global)
 
+`globalmarketcap` is the only supported name for this endpoint.
+
 ### Input Params
 
-| Required? |          Name           |             Description             | Options | Defaults to |
-| :-------: | :---------------------: | :---------------------------------: | :-----: | :---------: |
-|    ✅     | `quote`, `to`, `market` | The symbol of the currency to query |  `USD`  |             |
+| Required? |  Name  |    Aliases    |               Description                |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :----: | :-----------: | :--------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | market | `quote`, `to` | The symbol of the currency to convert to | string |         |         |            |                |
+
+### Example
+
+Request:
 
 ```json
 {
@@ -152,158 +194,26 @@ Returns the global market capitilization from the [global endpoint](https://api.
 }
 ```
 
-### Sample Output
+Response:
 
 ```json
 {
-  "jobRunID": "1",
-  "data": {
-    "market_cap_usd": 368198248292,
-    "volume_24h_usd": 59351367068,
-    "bitcoin_dominance_percentage": 59.98,
-    "cryptocurrencies_number": 2435,
-    "market_cap_ath_value": 835692000000,
-    "market_cap_ath_date": "2018-01-07T11:17:00Z",
-    "volume_24h_ath_value": 197699715619,
-    "volume_24h_ath_date": "2020-03-13T10:00:00Z",
-    "volume_24h_percent_from_ath": -69.98,
-    "volume_24h_percent_to_ath": 233.1,
-    "market_cap_change_24h": -0.2,
-    "volume_24h_change_24h": 16.98,
-    "last_updated": 1603238207,
-    "result": 368198248292
-  },
-  "result": 368198248292,
-  "statusCode": 200
+  "result": 2559344984924
 }
 ```
 
-## Marketcap Endpoint
+---
 
-Fetch one or multiple market cap assets
+## Coins Endpoint
+
+`coins` is the only supported name for this endpoint.
 
 ### Input Params
 
-| Required? |          Name           |                   Description                    | Options | Defaults to |
-| :-------: | :---------------------: | :----------------------------------------------: | :-----: | :---------: |
-|    ✅     | `base`, `from`, `coin`  |       The symbol of the currency to query        |         |             |
-|    ✅     | `quote`, `to`, `market` |     The symbol of the currency to convert to     |         |             |
-|           |        `coinid`         | The coin ID (optional to use in place of `base`) |         |             |
+There are no input parameters for this endpoint.
 
-### Sample Input
+### Example
 
-```json
-{
-  "jobId": "1",
-  "data": {
-    "endpoint": "marketcap",
-    "base": "ETH",
-    "quote": "USD"
-  }
-}
-```
+There are no examples for this endpoint.
 
-### Sample Output
-
-```json
-{
-  "jobRunID": "278c97ffadb54a5bbb93cfec5f7b5503",
-  "data": {
-    "id": "eth-ethereum",
-    "name": "Ethereum",
-    "symbol": "ETH",
-    "rank": 2,
-    "circulating_supply": 109469522,
-    "total_supply": 109469556,
-    "max_supply": 0,
-    "beta_value": 1.04048,
-    "last_updated": "2020-01-28T21:56:03Z",
-    "quotes": {
-      "USD": {
-        "price": 173.00001891,
-        "volume_24h": 8256159044.3763,
-        "volume_24h_change_24h": 2.54,
-        "market_cap": 18938229376,
-        "market_cap_change_24h": 0.93,
-        "percent_change_1h": 0.27,
-        "percent_change_12h": 1.04,
-        "percent_change_24h": 0.92,
-        "percent_change_7d": 2.18,
-        "percent_change_30d": 27.49,
-        "percent_change_1y": 64.2,
-        "ath_price": 1432.88,
-        "ath_date": "2018-01-13T21:04:00Z",
-        "percent_from_price_ath": -87.93
-      }
-    },
-    "result": 173.00001891
-  },
-  "result": 173.00001891,
-  "statusCode": 200
-}
-```
-
-## Volume Endpoint
-
-Fetch one or multiple assets for volume
-
-### Input Params
-
-| Required? |          Name           |                   Description                    | Options | Defaults to |
-| :-------: | :---------------------: | :----------------------------------------------: | :-----: | :---------: |
-|    ✅     | `base`, `from`, `coin`  |       The symbol of the currency to query        |         |             |
-|    ✅     | `quote`, `to`, `market` |     The symbol of the currency to convert to     |         |             |
-|           |        `coinid`         | The coin ID (optional to use in place of `base`) |         |             |
-
-### Sample Input
-
-```json
-{
-  "jobId": "1",
-  "data": {
-    "endpoint": "volume",
-    "base": "ETH",
-    "quote": "USD"
-  }
-}
-```
-
-### Sample Output
-
-```json
-{
-  "jobRunID": "278c97ffadb54a5bbb93cfec5f7b5503",
-  "data": {
-    "id": "eth-ethereum",
-    "name": "Ethereum",
-    "symbol": "ETH",
-    "rank": 2,
-    "circulating_supply": 109469522,
-    "total_supply": 109469556,
-    "max_supply": 0,
-    "beta_value": 1.04048,
-    "last_updated": "2020-01-28T21:56:03Z",
-    "quotes": {
-      "USD": {
-        "price": 173.00001891,
-        "volume_24h": 8256159044.3763,
-        "volume_24h_change_24h": 2.54,
-        "market_cap": 18938229376,
-        "market_cap_change_24h": 0.93,
-        "percent_change_1h": 0.27,
-        "percent_change_12h": 1.04,
-        "percent_change_24h": 0.92,
-        "percent_change_7d": 2.18,
-        "percent_change_30d": 27.49,
-        "percent_change_1y": 64.2,
-        "ath_price": 1432.88,
-        "ath_date": "2018-01-13T21:04:00Z",
-        "percent_from_price_ath": -87.93
-      }
-    },
-    "result": 8256159044.3763
-  },
-  "result": 8256159044.3763,
-  "statusCode": 200
-}
-```
+---
