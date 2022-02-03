@@ -30,9 +30,9 @@ const getGroupRedirect = (name: string) => `- [${name}](./${name}/README.md)`
 const getJsonFile = (path: string): JsonObject => JSON.parse(shell.cat(path).toString())
 
 const getEndpoints = async (adapterPath: string) => {
+  let endpointsText = 'Unknown'
   try {
     const indexPath = adapterPath + '/src/endpoint/index.ts'
-    if (!shell.test('-f', indexPath)) return 'Unknown'
 
     const endpointDetails: EndpointDetails = await require(localPathToRoot + indexPath)
 
@@ -44,55 +44,71 @@ const getEndpoints = async (adapterPath: string) => {
       return list
     }, [])
 
-    if (!allSupportedEndpoints.length) return 'Unknown'
+    if (allSupportedEndpoints.length)
+      endpointsText = allSupportedEndpoints.sort().map(wrapCode).join(', ')
 
-    return allSupportedEndpoints.sort().map(wrapCode).join(', ')
+    return endpointsText
   } catch (e) {
     // TODO add error logging when verbose
-    return 'Unknown'
+    return endpointsText
   }
 }
 
-const getDefaultEndpoint = async (adapterPath: string) => {
+const getConfigDefaults = async (adapterPath: string) => {
+  let defaultBaseUrl = 'Unknown'
+  let defaultEndpoint = 'Unknown'
   try {
     const configPath = adapterPath + '/src/config.ts'
-    if (!shell.test('-f', configPath)) return 'Unknown'
 
     const config = await require(localPathToRoot + configPath)
 
-    return config.DEFAULT_ENDPOINT ? wrapCode(config.DEFAULT_ENDPOINT) : 'Unknown'
+    if (config.DEFAULT_BASE_URL) defaultBaseUrl = wrapCode(config.DEFAULT_BASE_URL)
+    if (config.DEFAULT_ENDPOINT) defaultEndpoint = wrapCode(config.DEFAULT_ENDPOINT)
+
+    return { defaultBaseUrl, defaultEndpoint }
   } catch (e) {
     // TODO add error logging when verbose
-    return 'Unknown'
+    return { defaultBaseUrl, defaultEndpoint }
   }
 }
 
 const getEnvVars = (adapterPath: string) => {
-  const schemaPath = adapterPath + '/schemas/env.json'
-  if (!shell.test('-f', schemaPath)) return 'Unknown'
+  try {
+    const schemaPath = adapterPath + '/schemas/env.json'
 
-  const { properties = {}, required = [] } = getJsonFile(schemaPath) as Schema
+    const { properties = {}, required = [] } = getJsonFile(schemaPath) as Schema
 
-  const envVars = Object.keys(properties)
+    const envVarsList = Object.keys(properties)
 
-  const formatted = envVars.sort().map((e) => wrapCode(e) + (required.includes(e) ? ' (✅)' : ''))
+    const formatted = envVarsList
+      .sort()
+      .map((e) => wrapCode(e) + (required.includes(e) ? ' (✅)' : ''))
 
-  return formatted.join(', ')
+    return formatted.join(', ')
+  } catch (e) {
+    // TODO add error logging when verbose
+    return 'Unknown'
+  }
 }
 
 const getVersion = (adapterPath: string) => {
-  const packagePath = adapterPath + '/package.json'
-  if (!shell.test('-f', packagePath)) return 'Unknown'
+  let version = 'Unknown'
+  try {
+    const packagePath = adapterPath + '/package.json'
+    const packageJson = getJsonFile(packagePath) as Package
 
-  const packageJson = getJsonFile(packagePath) as Package
+    if (packageJson.version) version = wrapCode(packageJson.version)
 
-  return packageJson.version ? wrapCode(packageJson.version) : 'Unknown'
+    return version
+  } catch (e) {
+    // TODO add error logging when verbose
+    return version
+  }
 }
 
 const getWSSupport = async (adapterPath: string) => {
   try {
     const adapterFilePath = adapterPath + '/src/adapter.ts'
-    if (!shell.test('-f', adapterFilePath)) return 'Unknown'
 
     const adapterFile = await require(localPathToRoot + adapterFilePath)
 
@@ -170,13 +186,11 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       allAdapters.map(async (adapter) => {
         const version = getVersion(adapter.path)
         const endpoints = await getEndpoints(adapter.path)
-        const defaultEndpoint = await getDefaultEndpoint(adapter.path)
+        const { defaultBaseUrl, defaultEndpoint } = await getConfigDefaults(adapter.path)
         const envVars = getEnvVars(adapter.path)
         const wsSupport = await getWSSupport(adapter.path)
         /*TODO
-        - API sources
         - License
-        - WS Support
         - HTTP Support
         - Endpoint batching
         - Supported tests (integration, unit, e2e (link to each folder))
@@ -187,6 +201,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
           adapter.redirect,
           version,
           adapter.type,
+          defaultBaseUrl,
           envVars,
           endpoints,
           defaultEndpoint,
@@ -199,6 +214,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       'Name',
       'Version',
       'Type',
+      'Default API URL',
       'Environment Variables (✅ = required)',
       'Endpoints',
       'Default Endpoint',
