@@ -132,6 +132,17 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         const version = getVersion(adapter.path)
         const endpoints = await getEndpoints(adapter.path)
         const defaultEndpoint = await getDefaultEndpoint(adapter.path)
+        /*TODO
+        - NAME (taken from src/index.ts, but lowercase, '_' => ' ' and capitalize first letter of each word)
+        - Env vars
+        - API sources
+        - License
+        - WS Support
+        - HTTP Support
+        - Endpoint batching
+        - Supported tests (integration, unit, e2e (link to each folder))
+        - Other adapter dependencies from schema (link to other READMEs)
+        */
         return [adapter.redirect, version, adapter.type, endpoints, defaultEndpoint]
       }),
     )
