@@ -30,31 +30,41 @@ const getGroupRedirect = (name: string) => `- [${name}](./${name}/README.md)`
 const getJsonFile = (path: string): JsonObject => JSON.parse(shell.cat(path).toString())
 
 const getEndpoints = async (adapterPath: string) => {
-  const indexPath = adapterPath + '/src/endpoint/index.ts'
-  if (!shell.test('-f', indexPath)) return 'Unknown'
+  try {
+    const indexPath = adapterPath + '/src/endpoint/index.ts'
+    if (!shell.test('-f', indexPath)) return 'Unknown'
 
-  const endpointDetails: EndpointDetails = await require(localPathToRoot + indexPath)
+    const endpointDetails: EndpointDetails = await require(localPathToRoot + indexPath)
 
-  const endpoints = Object.keys(endpointDetails)
+    const endpoints = Object.keys(endpointDetails)
 
-  const allSupportedEndpoints = endpoints.reduce((list: string[], e) => {
-    const supportedEndpoints = endpointDetails[e]?.supportedEndpoints ?? []
-    list.push(...supportedEndpoints)
-    return list
-  }, [])
+    const allSupportedEndpoints = endpoints.reduce((list: string[], e) => {
+      const supportedEndpoints = endpointDetails[e]?.supportedEndpoints ?? []
+      list.push(...supportedEndpoints)
+      return list
+    }, [])
 
-  if (!allSupportedEndpoints.length) return 'Unknown'
+    if (!allSupportedEndpoints.length) return 'Unknown'
 
-  return allSupportedEndpoints.sort().map(wrapCode).join(', ')
+    return allSupportedEndpoints.sort().map(wrapCode).join(', ')
+  } catch (e) {
+    // TODO add error logging when verbose
+    return 'Unknown'
+  }
 }
 
 const getDefaultEndpoint = async (adapterPath: string) => {
-  const configPath = adapterPath + '/src/config.ts'
-  if (!shell.test('-f', configPath)) return 'Unknown'
+  try {
+    const configPath = adapterPath + '/src/config.ts'
+    if (!shell.test('-f', configPath)) return 'Unknown'
 
-  const config = await require(localPathToRoot + configPath)
+    const config = await require(localPathToRoot + configPath)
 
-  return config.DEFAULT_ENDPOINT ? wrapCode(config.DEFAULT_ENDPOINT) : 'Unknown'
+    return config.DEFAULT_ENDPOINT ? wrapCode(config.DEFAULT_ENDPOINT) : 'Unknown'
+  } catch (e) {
+    // TODO add error logging when verbose
+    return 'Unknown'
+  }
 }
 
 const getEnvVars = (adapterPath: string) => {
@@ -77,6 +87,20 @@ const getVersion = (adapterPath: string) => {
   const packageJson = getJsonFile(packagePath) as Package
 
   return packageJson.version ? wrapCode(packageJson.version) : 'Unknown'
+}
+
+const getWSSupport = async (adapterPath: string) => {
+  try {
+    const adapterFilePath = adapterPath + '/src/adapter.ts'
+    if (!shell.test('-f', adapterFilePath)) return 'Unknown'
+
+    const adapterFile = await require(localPathToRoot + adapterFilePath)
+
+    return adapterFile.makeWSHandler ? '✅' : ''
+  } catch (e) {
+    // TODO add error logging when verbose
+    return 'Unknown'
+  }
 }
 
 const sortText = (a: string, b: string) => {
@@ -148,6 +172,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         const endpoints = await getEndpoints(adapter.path)
         const defaultEndpoint = await getDefaultEndpoint(adapter.path)
         const envVars = getEnvVars(adapter.path)
+        const wsSupport = await getWSSupport(adapter.path)
         /*TODO
         - API sources
         - License
@@ -158,7 +183,15 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         - Other adapter dependencies from schema (link to other READMEs)
         - NAME (taken from src/index.ts, but lowercase, '_' => ' ' and capitalize first letter of each word)
         */
-        return [adapter.redirect, version, adapter.type, envVars, endpoints, defaultEndpoint]
+        return [
+          adapter.redirect,
+          version,
+          adapter.type,
+          envVars,
+          endpoints,
+          defaultEndpoint,
+          wsSupport,
+        ]
       }),
     )
 
@@ -169,6 +202,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       'Environment Variables (✅ = required)',
       'Endpoints',
       'Default Endpoint',
+      'Supports WS',
     ])
 
     saveText(
