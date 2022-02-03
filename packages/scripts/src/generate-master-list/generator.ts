@@ -101,10 +101,13 @@ const getEnvVars = (adapterPath: string) => {
 
 const getTestSupport = (adapterPath: string) => {
   const pathToTests = adapterPath + '/test'
+  const pathToE2E = pathToTests + '/e2e'
+  const pathToIntegration = pathToTests + '/integration'
+  const pathToUnit = pathToTests + '/unit'
   return {
-    e2e: shell.test('-d', pathToTests + '/e2e') ? '✅' : '',
-    integration: shell.test('-d', pathToTests + '/integration') ? '✅' : '',
-    unit: shell.test('-d', pathToTests + '/unit') ? '✅' : '',
+    e2e: shell.test('-d', pathToE2E) ? `[✅](${pathToE2E})` : '',
+    integration: shell.test('-d', pathToIntegration) ? `[✅](${pathToIntegration})` : '',
+    unit: shell.test('-d', pathToUnit) ? `[✅](${pathToUnit})` : '',
   }
 }
 
@@ -210,7 +213,6 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         /*TODO
         - License
         - HTTP Support
-        - Supported tests (integration, unit, e2e (link to each folder))
         - Other adapter dependencies from schema (link to other READMEs)
         - NAME (taken from src/index.ts, but lowercase, '_' => ' ' and capitalize first letter of each word)
         */
