@@ -21,7 +21,10 @@ const getRedirectText = (path: string) => (name: string) => `- [${name}](${path}
 
 const saveText = (fileData: FileData[], stage: boolean): void => {
   for (const file of fileData) {
-    shell.exec(`echo ${file.text} > ${file.path}`)
+    shell.exec(`echo "${file.text}" > ${file.path}`, {
+      fatal: true,
+      silent: true,
+    })
 
     if (stage)
       shell.exec(`git add ${file.path}`, {
@@ -62,7 +65,6 @@ export const generateMasterList = (stage = false): void => {
 
     // TODO replace this one with full table
     const allAdapterText = getAdapterList(allRedirectList, allListDescription)
-    console.log({ allAdapterText })
 
     saveText(
       [
