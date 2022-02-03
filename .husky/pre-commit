@@ -1,4 +1,24 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+echo 'Running pre-commit steps. If this process is halted unexpectedly, you may need to run "git reset --soft HEAD^" to undo the temporary commit.'
+
+# Create temporary commit so you can stash all unstaged changes
+# https://stackoverflow.com/a/34681302
+git commit --no-verify --message "Temporary commit for pre-commit steps" > /dev/null
+
+git stash -u > /dev/null
+
+yarn generate:master-list -s
+MASTER_LIST_EXIT_CODE=$?
+
+if [ $MASTER_LIST_EXIT_CODE -ne 0 ]; then
+    git reset --soft HEAD^
+    echo "Master list could not be generated. Aborting commit."
+    exit 1
+else
+    git reset --soft HEAD^
+    echo "Master list generated successfully."
+fi
+
 yarn lint-staged

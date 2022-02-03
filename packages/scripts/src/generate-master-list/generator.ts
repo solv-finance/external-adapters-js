@@ -37,11 +37,6 @@ const saveText = (fileData: FileData[], stage: boolean): void => {
 }
 
 export const generateMasterList = (stage = false): void => {
-  shell.exec('git stash', {
-    fatal: true, // TODO investigate weird file revert behavior
-    silent: true,
-  })
-
   try {
     const compositeAdapters = shell
       .ls('-A', pathToComposites)
@@ -75,17 +70,8 @@ export const generateMasterList = (stage = false): void => {
       ],
       stage,
     )
-
-    shell.exec('git stash pop', {
-      // fatal: true, //TODO investigate weird file behavior
-      // silent: true,
-    })
   } catch (error) {
     console.log({ error: error.message, stack: error.stack })
-    shell.exec('git stash pop', {
-      // fatal: true, //TODO investigate weird file behavior
-      // silent: true,
-    })
     throw Error(error)
   }
 }

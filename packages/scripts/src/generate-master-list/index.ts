@@ -44,9 +44,7 @@ export async function main(): Promise<void | string> {
       return
     }
 
-    console.log(
-      'Generating master adapter lists. Warning: this process stashes unstaged changes while running. If it exits unexpectedly, you may need to run `git stash pop` to apply the stashed changes.',
-    )
+    console.log('Generating master adapter lists.')
 
     await generateMasterList(options.stage)
 
