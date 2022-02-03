@@ -30,6 +30,7 @@ export type MaxColChars = number[]
 export type Package = {
   name?: string
   version?: string
+  dependencies?: { [name: string]: string }
 }
 
 export type Schema = {

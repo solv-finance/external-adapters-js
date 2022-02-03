@@ -13,6 +13,14 @@ const pathToTargets = 'packages/targets/'
 
 const localPathToRoot = '../../../../'
 
+const baseEaDependencies = [
+  'ea',
+  'ea-bootstrap',
+  'ea-factories',
+  'ea-reference-data-reader',
+  'ea-test-helpers',
+]
+
 const wrapCode = (s: string | number = ''): string => `\`${s.toString()}\``
 
 const getAdapterList = (list: string[], description: string): string => {
@@ -111,7 +119,8 @@ const getTestSupport = (adapterPath: string) => {
   }
 }
 
-const getVersion = (adapterPath: string) => {
+const getPackage = (adapterPath: string) => {
+  let dependencies = 'Unknown'
   let version = 'Unknown'
   try {
     const packagePath = adapterPath + '/package.json'
@@ -119,10 +128,23 @@ const getVersion = (adapterPath: string) => {
 
     if (packageJson.version) version = wrapCode(packageJson.version)
 
-    return version
+    if (packageJson.dependencies) {
+      let dependencyList = Object.keys(packageJson.dependencies)
+
+      dependencyList = dependencyList.reduce((list: string[], dep) => {
+        const depSplit = dep.split('/')
+        if (depSplit[0] === '@chainlink' && !baseEaDependencies.includes(depSplit[1]))
+          list.push(wrapCode(depSplit[1]))
+        return list
+      }, [])
+
+      dependencies = dependencyList.length ? dependencyList.sort().join(', ') : ''
+    }
+
+    return { dependencies, version }
   } catch (e) {
     // TODO add error logging when verbose
-    return version
+    return { dependencies, version }
   }
 }
 
@@ -204,7 +226,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
     // Fetch general fields
     const allAdaptersTable = await Promise.all(
       allAdapters.map(async (adapter) => {
-        const version = getVersion(adapter.path)
+        const { dependencies, version } = getPackage(adapter.path)
         const { endpointsText, batchableEndpoints } = await getEndpoints(adapter.path)
         const { defaultBaseUrl, defaultEndpoint } = await getConfigDefaults(adapter.path)
         const envVars = getEnvVars(adapter.path)
@@ -221,6 +243,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
           version,
           adapter.type,
           defaultBaseUrl,
+          dependencies,
           envVars,
           endpointsText,
           defaultEndpoint,
@@ -238,6 +261,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       'Version',
       'Type',
       'Default API URL',
+      'Dependencies',
       'Environment Variables (✅ = required)',
       'Endpoints',
       'Default Endpoint',
