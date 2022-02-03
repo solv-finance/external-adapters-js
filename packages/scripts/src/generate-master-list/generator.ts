@@ -16,7 +16,7 @@ const localPathToRoot = '../../../../'
 const wrapCode = (s: string | number = ''): string => `\`${s.toString()}\``
 
 const getAdapterList = (list: string[], description: string): string => {
-  return description + '\n\n## List\n\n' + list.join('\n') + '\n'
+  return description + '\n\n## List\n\n' + list.join('\n')
 }
 
 const getRedirectText = (path: string) => (name: string) => `[${name}](${path}${name}/README.md)`
@@ -31,6 +31,7 @@ const getJsonFile = (path: string): JsonObject => JSON.parse(shell.cat(path).toS
 
 const getEndpoints = async (adapterPath: string) => {
   let endpointsText = 'Unknown'
+  let batchableEndpoints = 'Unknown'
   try {
     const indexPath = adapterPath + '/src/endpoint/index.ts'
 
@@ -39,18 +40,25 @@ const getEndpoints = async (adapterPath: string) => {
     const endpoints = Object.keys(endpointDetails)
 
     const allSupportedEndpoints = endpoints.reduce((list: string[], e) => {
-      const supportedEndpoints = endpointDetails[e]?.supportedEndpoints ?? []
+      const supportedEndpoints = endpointDetails[e].supportedEndpoints ?? []
       list.push(...supportedEndpoints)
       return list
     }, [])
 
-    if (allSupportedEndpoints.length)
-      endpointsText = allSupportedEndpoints.sort().map(wrapCode).join(', ')
+    const allBatchableEndpoints = endpoints.filter((e) => endpointDetails[e].batchablePropertyPath)
 
-    return endpointsText
+    endpointsText = allSupportedEndpoints.length
+      ? allSupportedEndpoints.sort().map(wrapCode).join(', ')
+      : ''
+
+    batchableEndpoints = allBatchableEndpoints.length
+      ? allBatchableEndpoints.sort().map(wrapCode).join(', ')
+      : ''
+
+    return { endpointsText, batchableEndpoints }
   } catch (e) {
     // TODO add error logging when verbose
-    return endpointsText
+    return { endpointsText, batchableEndpoints }
   }
 }
 
@@ -185,14 +193,13 @@ export const generateMasterList = async (stage = false): Promise<void> => {
     const allAdaptersTable = await Promise.all(
       allAdapters.map(async (adapter) => {
         const version = getVersion(adapter.path)
-        const endpoints = await getEndpoints(adapter.path)
+        const { endpointsText, batchableEndpoints } = await getEndpoints(adapter.path)
         const { defaultBaseUrl, defaultEndpoint } = await getConfigDefaults(adapter.path)
         const envVars = getEnvVars(adapter.path)
         const wsSupport = await getWSSupport(adapter.path)
         /*TODO
         - License
         - HTTP Support
-        - Endpoint batching
         - Supported tests (integration, unit, e2e (link to each folder))
         - Other adapter dependencies from schema (link to other READMEs)
         - NAME (taken from src/index.ts, but lowercase, '_' => ' ' and capitalize first letter of each word)
@@ -203,8 +210,9 @@ export const generateMasterList = async (stage = false): Promise<void> => {
           adapter.type,
           defaultBaseUrl,
           envVars,
-          endpoints,
+          endpointsText,
           defaultEndpoint,
+          batchableEndpoints,
           wsSupport,
         ]
       }),
@@ -218,6 +226,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       'Environment Variables (✅ = required)',
       'Endpoints',
       'Default Endpoint',
+      'Batchable Endpoints',
       'Supports WS',
     ])
 

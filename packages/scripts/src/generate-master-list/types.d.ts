@@ -7,6 +7,7 @@ export type FileData = {
 
 export type EndpointDetails = {
   [endpointName: string]: {
+    batchablePropertyPath?: { name: string }[]
     supportedEndpoints: string[]
     inputParameters: InputParameters
     description?: string
