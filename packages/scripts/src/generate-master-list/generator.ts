@@ -99,6 +99,15 @@ const getEnvVars = (adapterPath: string) => {
   }
 }
 
+const getTestSupport = (adapterPath: string) => {
+  const pathToTests = adapterPath + '/test'
+  return {
+    e2e: shell.test('-d', pathToTests + '/e2e') ? '✅' : '',
+    integration: shell.test('-d', pathToTests + '/integration') ? '✅' : '',
+    unit: shell.test('-d', pathToTests + '/unit') ? '✅' : '',
+  }
+}
+
 const getVersion = (adapterPath: string) => {
   let version = 'Unknown'
   try {
@@ -197,6 +206,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         const { defaultBaseUrl, defaultEndpoint } = await getConfigDefaults(adapter.path)
         const envVars = getEnvVars(adapter.path)
         const wsSupport = await getWSSupport(adapter.path)
+        const { e2e, integration, unit } = getTestSupport(adapter.path)
         /*TODO
         - License
         - HTTP Support
@@ -214,6 +224,9 @@ export const generateMasterList = async (stage = false): Promise<void> => {
           defaultEndpoint,
           batchableEndpoints,
           wsSupport,
+          unit,
+          integration,
+          e2e,
         ]
       }),
     )
@@ -228,6 +241,9 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       'Default Endpoint',
       'Batchable Endpoints',
       'Supports WS',
+      'Unit Tests',
+      'Integration Tests',
+      'End-to-End Tests',
     ])
 
     saveText(
