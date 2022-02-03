@@ -1,13 +1,7 @@
-<<<<<<< HEAD:packages/core/bootstrap/src/lib/middleware/cache/ttl.ts
 import { logger } from '../../modules'
-import { AdapterRequest } from '@chainlink/types'
-import { CacheOptions, defaultOptions } from '.'
-=======
-import { logger } from '../../../external-adapter'
 import { AdapterRequestWithRateLimit } from '../../../types'
 import { defaultOptions } from '..'
 import { CacheOptions } from '../types'
->>>>>>> dcfa47b3e (Add Bootstrap type coverage):packages/core/bootstrap/src/lib/middleware/cache/utils/ttl.ts
 
 export const WARNING_MAX_AGE = 1000 * 60 * 2 // 2 minutes
 
