@@ -1,3 +1,5 @@
+export const allListDescription = '# Chainlink External Adapters Master List'
+
 export const compositeListDescription = `# Chainlink Composite External Adapters
 
 This section contains packages that represent composite adapters that use data from multiple other Chainlink external adapters.
