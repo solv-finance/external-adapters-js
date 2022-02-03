@@ -1,13 +1,11 @@
 import * as shell from 'shelljs'
-
 import {
-  allListDescription,
   compositeListDescription,
   sourceListDescription,
   targetListDescription,
 } from './textAssets'
-
-import { FileData } from './types'
+import { buildTable } from './table'
+import { FileData, JsonObject, Package } from './types'
 
 const pathToComposites = 'packages/composites/'
 const pathToSources = 'packages/sources/'
@@ -17,11 +15,36 @@ const getAdapterList = (list: string[], description: string): string => {
   return description + '\n\n## List\n\n' + list.join('\n') + '\n'
 }
 
-const getRedirectText = (path: string) => (name: string) => `- [${name}](${path}${name}/README.md)`
+const getRedirectText = (path: string) => (name: string) => `[${name}](${path}${name}/README.md)`
+
+const getCompositeRedirect = getRedirectText(pathToComposites)
+const getSourceRedirect = getRedirectText(pathToSources)
+const getTargetRedirect = getRedirectText(pathToTargets)
+
+const getGroupRedirect = (name: string) => `- [${name}](./${name}/README.md)`
+
+const getJsonFile = (path: string): JsonObject => JSON.parse(shell.cat(path).toString())
+
+const getVersion = (adapterPath: string) => {
+  const packagePath = adapterPath + '/package.json'
+
+  if (!shell.test('-f', packagePath)) return '`N/A`'
+
+  const packageJson = getJsonFile(packagePath) as Package
+
+  return `\`${packageJson.version}\`` ?? '`N/A`'
+}
+
+const sortText = (a: string, b: string) => {
+  const capitalA = a.toUpperCase()
+  const capitalB = b.toUpperCase()
+  return capitalA > capitalB ? 1 : capitalA < capitalB ? -1 : 0
+}
 
 const saveText = (fileData: FileData[], stage: boolean): void => {
   for (const file of fileData) {
-    shell.exec(`echo "${file.text}" > ${file.path}`, {
+    const formattedText = file.text.replace(/`/g, '\\`')
+    shell.exec(`echo "${formattedText}" > ${file.path}`, {
       fatal: true,
       silent: true,
     })
@@ -41,25 +64,46 @@ export const generateMasterList = (stage = false): void => {
     const compositeAdapters = shell
       .ls('-A', pathToComposites)
       .filter((name) => name !== 'README.md')
-    const compositeRedirectList = compositeAdapters.map(getRedirectText('./'))
+    const compositeRedirectList = compositeAdapters.map(getGroupRedirect)
     const compositeAdapterText = getAdapterList(compositeRedirectList, compositeListDescription)
 
     const sourceAdapters = shell.ls('-A', pathToSources).filter((name) => name !== 'README.md')
-    const sourceRedirectList = sourceAdapters.map(getRedirectText('./'))
+    const sourceRedirectList = sourceAdapters.map(getGroupRedirect)
     const sourceAdapterText = getAdapterList(sourceRedirectList, sourceListDescription)
 
     const targetAdapters = shell.ls('-A', pathToTargets).filter((name) => name !== 'README.md')
-    const targetRedirectList = targetAdapters.map(getRedirectText('./'))
+    const targetRedirectList = targetAdapters.map(getGroupRedirect)
     const targetAdapterText = getAdapterList(targetRedirectList, targetListDescription)
 
-    const allRedirectList = [
-      ...compositeAdapters.map(getRedirectText('./' + pathToComposites)),
-      ...sourceAdapters.map(getRedirectText('./' + pathToSources)),
-      ...targetAdapters.map(getRedirectText('./' + pathToTargets)),
-    ].sort()
+    // Fetch group-specific fields
+    const allAdapters = [
+      ...compositeAdapters.map((name) => ({
+        name,
+        type: '`composite`',
+        path: pathToComposites + name,
+        redirect: getCompositeRedirect(name),
+      })),
+      ...sourceAdapters.map((name) => ({
+        name,
+        type: '`source`',
+        path: pathToSources + name,
+        redirect: getSourceRedirect(name),
+      })),
+      ...targetAdapters.map((name) => ({
+        name,
+        type: '`target`',
+        path: pathToTargets + name,
+        redirect: getTargetRedirect(name),
+      })),
+    ].sort((a, b) => sortText(a.name, b.name))
 
-    // TODO replace this one with full table
-    const allAdapterText = getAdapterList(allRedirectList, allListDescription)
+    // Fetch general fields
+    const allAdaptersTable = allAdapters.map((adapter) => {
+      const version = getVersion(adapter.path)
+      return [adapter.redirect, version, adapter.type]
+    })
+
+    const allAdapterText = buildTable(allAdaptersTable, ['Name', 'Version', 'Type'])
 
     saveText(
       [

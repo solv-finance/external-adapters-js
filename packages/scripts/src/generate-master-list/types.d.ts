@@ -1,4 +1,4 @@
-import { InputParameters } from '@chainlink/types'
+// import { InputParameters } from '@chainlink/types'
 
 export type FileData = {
   path: string
@@ -22,14 +22,14 @@ export type FileData = {
 //   }
 // }
 
-// export type JsonObject = { [key: string]: any }
+export type JsonObject = { [key: string]: any }
 
-// export type MaxColChars = number[]
+export type MaxColChars = number[]
 
-// export type Package = {
-//   name?: string
-//   version?: string
-// }
+export type Package = {
+  name?: string
+  version?: string
+}
 
 // export type Schema = {
 //   title?: string
@@ -38,6 +38,6 @@ export type FileData = {
 //   required?: string[]
 // }
 
-// export type TableText = string[][]
+export type TableText = string[][]
 
-// export type TextRow = string[]
+export type TextRow = string[]
