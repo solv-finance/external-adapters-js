@@ -5,11 +5,15 @@ import {
   targetListDescription,
 } from './textAssets'
 import { buildTable } from './table'
-import { FileData, JsonObject, Package } from './types'
+import { EndpointDetails, FileData, JsonObject, Package } from './types'
 
 const pathToComposites = 'packages/composites/'
 const pathToSources = 'packages/sources/'
 const pathToTargets = 'packages/targets/'
+
+const localPathToRoot = '../../../../'
+
+const wrapCode = (s: string | number = ''): string => `\`${s.toString()}\``
 
 const getAdapterList = (list: string[], description: string): string => {
   return description + '\n\n## List\n\n' + list.join('\n') + '\n'
@@ -25,14 +29,39 @@ const getGroupRedirect = (name: string) => `- [${name}](./${name}/README.md)`
 
 const getJsonFile = (path: string): JsonObject => JSON.parse(shell.cat(path).toString())
 
+const getEndpoints = async (adapterPath: string) => {
+  const indexPath = adapterPath + '/src/endpoint/index.ts'
+  if (!shell.test('-f', indexPath)) return 'Unknown'
+
+  const endpointDetails: EndpointDetails = await require(localPathToRoot + indexPath)
+
+  const endpoints = Object.keys(endpointDetails)
+
+  const allSupportedEndpoints = endpoints.reduce((list: string[], e) => {
+    const supportedEndpoints = endpointDetails[e]?.supportedEndpoints ?? []
+    list.push(...supportedEndpoints)
+    return list
+  }, [])
+
+  return allSupportedEndpoints.sort().map(wrapCode).join(', ')
+}
+
+const getDefaultEndpoint = async (adapterPath: string) => {
+  const configPath = adapterPath + '/src/config.ts'
+  if (!shell.test('-f', configPath)) return 'Unknown'
+
+  const config = await require(localPathToRoot + configPath)
+
+  return config.DEFAULT_ENDPOINT ? wrapCode(config.DEFAULT_ENDPOINT) : 'Unknown'
+}
+
 const getVersion = (adapterPath: string) => {
   const packagePath = adapterPath + '/package.json'
-
-  if (!shell.test('-f', packagePath)) return '`N/A`'
+  if (!shell.test('-f', packagePath)) return 'Unknown'
 
   const packageJson = getJsonFile(packagePath) as Package
 
-  return `\`${packageJson.version}\`` ?? '`N/A`'
+  return packageJson.version ? wrapCode(packageJson.version) : 'Unknown'
 }
 
 const sortText = (a: string, b: string) => {
@@ -59,7 +88,7 @@ const saveText = (fileData: FileData[], stage: boolean): void => {
   }
 }
 
-export const generateMasterList = (stage = false): void => {
+export const generateMasterList = async (stage = false): Promise<void> => {
   try {
     const compositeAdapters = shell
       .ls('-A', pathToComposites)
@@ -98,12 +127,22 @@ export const generateMasterList = (stage = false): void => {
     ].sort((a, b) => sortText(a.name, b.name))
 
     // Fetch general fields
-    const allAdaptersTable = allAdapters.map((adapter) => {
-      const version = getVersion(adapter.path)
-      return [adapter.redirect, version, adapter.type]
-    })
+    const allAdaptersTable = await Promise.all(
+      allAdapters.map(async (adapter) => {
+        const version = getVersion(adapter.path)
+        const endpoints = await getEndpoints(adapter.path)
+        const defaultEndpoint = await getDefaultEndpoint(adapter.path)
+        return [adapter.redirect, version, adapter.type, endpoints, defaultEndpoint]
+      }),
+    )
 
-    const allAdapterText = buildTable(allAdaptersTable, ['Name', 'Version', 'Type'])
+    const allAdapterText = buildTable(allAdaptersTable, [
+      'Name',
+      'Version',
+      'Type',
+      'Endpoints',
+      'Default Endpoint',
+    ])
 
     saveText(
       [

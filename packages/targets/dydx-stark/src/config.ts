@@ -1,9 +1,9 @@
 import { Requester, util } from '@chainlink/ea-bootstrap'
 import types from '@chainlink/types'
-import { send } from './endpoint'
+// import { send } from './endpoint'
 
 export const DEFAULT_DATA_PATH = 'result'
-export const DEFAULT_ENDPOINT = send.NAME
+export const DEFAULT_ENDPOINT = 'send'
 
 export const DEFAULT_API_ENDPOINT = 'https://api.stage.dydx.exchange/v3/price'
 

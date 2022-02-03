@@ -1,151 +1,151 @@
-|                                       Name                                       | Version  |    Type     |
-| :------------------------------------------------------------------------------: | :------: | :---------: |
-|                   [1forge](packages/sources/1forge/README.md)                    | `1.4.9`  |  `source`   |
-|              [accuweather](packages/sources/accuweather/README.md)               | `1.1.10` |  `source`   |
-|              [ada-balance](packages/sources/ada-balance/README.md)               | `2.3.3`  |  `source`   |
-|                   [agoric](packages/targets/agoric/README.md)                    | `2.0.10` |  `target`   |
-|               [alphachain](packages/sources/alphachain/README.md)                | `1.1.10` |  `source`   |
-|             [alphavantage](packages/sources/alphavantage/README.md)              | `1.1.10` |  `source`   |
-|                   [alpine](packages/sources/alpine/README.md)                    | `1.1.10` |  `source`   |
-|                [amberdata](packages/sources/amberdata/README.md)                 | `1.3.6`  |  `source`   |
-|                  [anchor](packages/composites/anchor/README.md)                  | `1.1.24` | `composite` |
-|                 [anyblock](packages/sources/anyblock/README.md)                  | `1.1.10` |  `source`   |
-|              [ap-election](packages/sources/ap-election/README.md)               | `1.1.10` |  `source`   |
-|             [apy-finance](packages/composites/apy-finance/README.md)             | `1.0.35` | `composite` |
-|                   [augur](packages/composites/augur/README.md)                   | `1.0.26` | `composite` |
-|                      [bea](packages/sources/bea/README.md)                       | `1.1.10` |  `source`   |
-|                  [binance](packages/sources/binance/README.md)                   | `1.2.10` |  `source`   |
-|              [binance-dex](packages/sources/binance-dex/README.md)               | `1.2.10` |  `source`   |
-|        [bitcoin-json-rpc](packages/composites/bitcoin-json-rpc/README.md)        | `1.0.26` | `composite` |
-|                    [bitex](packages/sources/bitex/README.md)                     | `1.3.10` |  `source`   |
-|                    [bitso](packages/sources/bitso/README.md)                     | `1.2.10` |  `source`   |
-|           [blockchain.com](packages/sources/blockchain.com/README.md)            | `1.1.10` |  `source`   |
-|               [blockchair](packages/sources/blockchair/README.md)                | `1.1.10` |  `source`   |
-|              [blockcypher](packages/sources/blockcypher/README.md)               | `1.2.10` |  `source`   |
-|              [blockstream](packages/sources/blockstream/README.md)               | `1.2.10` |  `source`   |
-|                     [bob](packages/composites/bob/README.md)                     | `1.0.26` | `composite` |
-|             [bravenewcoin](packages/sources/bravenewcoin/README.md)              | `1.1.10` |  `source`   |
-|                  [btc.com](packages/sources/btc.com/README.md)                   | `1.2.10` |  `source`   |
-|               [cache.gold](packages/sources/cache.gold/README.md)                | `1.2.10` |  `source`   |
-|             [cfbenchmarks](packages/sources/cfbenchmarks/README.md)              | `1.4.2`  |  `source`   |
-|     [chain-reserve-wallet](packages/sources/chain-reserve-wallet/README.md)      | `2.2.6`  |  `source`   |
-|         [circuit-breaker](packages/composites/circuit-breaker/README.md)         | `1.0.25` | `composite` |
-|                  [coinapi](packages/sources/coinapi/README.md)                   | `1.1.11` |  `source`   |
-|                 [coinbase](packages/sources/coinbase/README.md)                  | `1.2.10` |  `source`   |
-|                [coincodex](packages/sources/coincodex/README.md)                 | `1.2.10` |  `source`   |
-|                [coingecko](packages/sources/coingecko/README.md)                 | `1.1.11` |  `source`   |
-|                 [coinlore](packages/sources/coinlore/README.md)                  | `1.2.10` |  `source`   |
-|            [coinmarketcap](packages/sources/coinmarketcap/README.md)             | `1.3.11` |  `source`   |
-|              [coinmetrics](packages/sources/coinmetrics/README.md)               | `1.2.10` |  `source`   |
-|              [coinpaprika](packages/sources/coinpaprika/README.md)               | `1.2.0`  |  `source`   |
-|              [coinranking](packages/sources/coinranking/README.md)               | `1.1.10` |  `source`   |
-|                  [conflux](packages/targets/conflux/README.md)                   | `1.0.25` |  `target`   |
-|            [covid-tracker](packages/sources/covid-tracker/README.md)             | `1.2.10` |  `source`   |
-| [crypto-volatility-index](packages/composites/crypto-volatility-index/README.md) | `1.0.35` | `composite` |
-|               [cryptoapis](packages/sources/cryptoapis/README.md)                | `1.1.10` |  `source`   |
-|            [cryptoapis-v2](packages/sources/cryptoapis-v2/README.md)             | `1.1.10` |  `source`   |
-|            [cryptocompare](packages/sources/cryptocompare/README.md)             | `1.2.11` |  `source`   |
-|                 [cryptoid](packages/sources/cryptoid/README.md)                  | `1.2.10` |  `source`   |
-|                [cryptomkt](packages/sources/cryptomkt/README.md)                 | `1.2.10` |  `source`   |
-|            [currencylayer](packages/sources/currencylayer/README.md)             | `1.3.8`  |  `source`   |
-|                    [curve](packages/sources/curve/README.md)                     | `1.1.10` |  `source`   |
-|              [defi-dozen](packages/composites/defi-dozen/README.md)              | `1.0.35` | `composite` |
-|              [defi-pulse](packages/composites/defi-pulse/README.md)              | `1.0.35` | `composite` |
-|                  [deribit](packages/sources/deribit/README.md)                   | `1.1.10` |  `source`   |
-|                [dns-query](packages/sources/dns-query/README.md)                 | `1.2.5`  |  `source`   |
-|        [dns-record-check](packages/composites/dns-record-check/README.md)        | `1.1.5`  | `composite` |
-|                    [durin](packages/sources/durin/README.md)                     | `1.1.10` |  `source`   |
-|                   [dwolla](packages/sources/dwolla/README.md)                    | `1.1.10` |  `source`   |
-|                   [dxdao](packages/composites/dxdao/README.md)                   | `1.0.35` | `composite` |
-|                   [dxfeed](packages/sources/dxfeed/README.md)                    | `1.2.12` |  `source`   |
-|         [dxfeed-secondary](packages/sources/dxfeed-secondary/README.md)          | `1.1.24` |  `source`   |
-|            [dydx-rewards](packages/composites/dydx-rewards/README.md)            | `1.1.0`  | `composite` |
-|               [dydx-stark](packages/targets/dydx-stark/README.md)                | `1.0.25` |  `target`   |
-|                   [enzyme](packages/sources/enzyme/README.md)                    | `1.1.10` |  `source`   |
-|        [eodhistoricaldata](packages/sources/eodhistoricaldata/README.md)         | `1.2.10` |  `source`   |
-|              [eth-balance](packages/sources/eth-balance/README.md)               | `1.1.10` |  `source`   |
-|               [etherchain](packages/sources/etherchain/README.md)                | `1.2.10` |  `source`   |
-|                [etherscan](packages/sources/etherscan/README.md)                 | `1.2.10` |  `source`   |
-|            [ethgasstation](packages/sources/ethgasstation/README.md)             | `1.2.10` |  `source`   |
-|              [ethgaswatch](packages/sources/ethgaswatch/README.md)               | `1.2.10` |  `source`   |
-|                 [ethwrite](packages/targets/ethwrite/README.md)                  | `1.0.25` |  `target`   |
-|        [expert-car-broker](packages/sources/expert-car-broker/README.md)         | `1.2.10` |  `source`   |
-|                   [fcsapi](packages/sources/fcsapi/README.md)                    | `1.0.25` |  `source`   |
-|                   [finage](packages/sources/finage/README.md)                    | `1.3.11` |  `source`   |
-|                  [finnhub](packages/sources/finnhub/README.md)                   | `1.0.25` |  `source`   |
-|                    [fixer](packages/sources/fixer/README.md)                     | `1.3.8`  |  `source`   |
-|              [flightaware](packages/sources/flightaware/README.md)               | `1.1.10` |  `source`   |
-|                 [fmpcloud](packages/sources/fmpcloud/README.md)                  | `1.2.10` |  `source`   |
-|                   [gemini](packages/sources/gemini/README.md)                    | `2.1.10` |  `source`   |
-|       [genesis-volatility](packages/sources/genesis-volatility/README.md)        | `1.2.10` |  `source`   |
-|                    [geodb](packages/sources/geodb/README.md)                     | `1.1.10` |  `source`   |
-|          [google-bigquery](packages/sources/google-bigquery/README.md)           | `1.1.10` |  `source`   |
-|          [google-weather](packages/composites/google-weather/README.md)          | `1.0.26` | `composite` |
-|                  [graphql](packages/sources/graphql/README.md)                   | `1.1.10` |  `source`   |
-|                  [harmony](packages/targets/harmony/README.md)                   | `1.0.25` |  `target`   |
-|      [historical-average](packages/composites/historical-average/README.md)      | `1.0.22` | `composite` |
-|                [iex-cloud](packages/sources/iex-cloud/README.md)                 | `1.1.10` |  `source`   |
-|                 [intrinio](packages/sources/intrinio/README.md)                  | `1.1.10` |  `source`   |
-|                     [ipfs](packages/sources/ipfs/README.md)                      | `1.2.6`  |  `source`   |
-|                 [json-rpc](packages/sources/json-rpc/README.md)                  | `1.1.21` |  `source`   |
-|                    [kaiko](packages/sources/kaiko/README.md)                     | `1.0.25` |  `source`   |
-|  [layer2-sequencer-health](packages/sources/layer2-sequencer-health/README.md)   | `1.0.25` |  `source`   |
-|                      [lcx](packages/sources/lcx/README.md)                       | `1.1.21` |  `source`   |
-|          [linear-finance](packages/composites/linear-finance/README.md)          | `1.1.32` | `composite` |
-|                 [linkpool](packages/sources/linkpool/README.md)                  | `1.0.25` |  `source`   |
-|                   [lition](packages/sources/lition/README.md)                    | `1.1.10` |  `source`   |
-|                    [lotus](packages/sources/lotus/README.md)                     | `2.1.10` |  `source`   |
-|          [market-closure](packages/composites/market-closure/README.md)          | `1.0.25` | `composite` |
-|              [marketstack](packages/sources/marketstack/README.md)               | `1.2.10` |  `source`   |
-|              [medianizer](packages/composites/medianizer/README.md)              | `1.0.25` | `composite` |
-|                  [messari](packages/sources/messari/README.md)                   | `1.1.10` |  `source`   |
-|                [metalsapi](packages/sources/metalsapi/README.md)                 | `1.6.7`  |  `source`   |
-|              [mycryptoapi](packages/sources/mycryptoapi/README.md)               | `1.2.10` |  `source`   |
-|                     [ncfx](packages/sources/ncfx/README.md)                      | `1.1.12` |  `source`   |
-|                   [nikkei](packages/sources/nikkei/README.md)                    | `1.1.20` |  `source`   |
-|                   [nomics](packages/sources/nomics/README.md)                    | `1.0.26` |  `source`   |
-|              [oilpriceapi](packages/sources/oilpriceapi/README.md)               | `2.0.10` |  `source`   |
-|              [onchain-gas](packages/sources/onchain-gas/README.md)               | `1.1.10` |  `source`   |
-|        [openexchangerates](packages/sources/openexchangerates/README.md)         | `1.3.8`  |  `source`   |
-|         [orchid-bandwidth](packages/sources/orchid-bandwidth/README.md)          | `1.1.10` |  `source`   |
-|       [outlier-detection](packages/composites/outlier-detection/README.md)       | `1.0.44` | `composite` |
-|                    [paxos](packages/sources/paxos/README.md)                     | `1.2.10` |  `source`   |
-|                   [paypal](packages/sources/paypal/README.md)                    | `1.1.10` |  `source`   |
-|                      [poa](packages/sources/poa/README.md)                       | `1.2.10` |  `source`   |
-|                  [polygon](packages/sources/polygon/README.md)                   | `1.4.8`  |  `source`   |
-|             [por-indexer](packages/composites/por-indexer/README.md)             | `1.0.8`  | `composite` |
-|       [proof-of-reserves](packages/composites/proof-of-reserves/README.md)       | `1.4.7`  | `composite` |
-|                   [reduce](packages/sources/reduce/README.md)                    | `1.1.21` |  `source`   |
-|     [reference-transform](packages/composites/reference-transform/README.md)     | `1.0.44` | `composite` |
-|        [renvm-address-set](packages/sources/renvm-address-set/README.md)         | `1.2.7`  |  `source`   |
-|             [satoshitango](packages/sources/satoshitango/README.md)              | `1.2.10` |  `source`   |
-|         [set-token-index](packages/composites/set-token-index/README.md)         | `1.0.35` | `composite` |
-|                [snowflake](packages/sources/snowflake/README.md)                 | `1.1.10` |  `source`   |
-|                  [sochain](packages/sources/sochain/README.md)                   | `1.2.10` |  `source`   |
-|     [spectral-macro-score](packages/sources/spectral-macro-score/README.md)      | `1.1.10` |  `source`   |
-|             [sportsdataio](packages/sources/sportsdataio/README.md)              | `1.1.24` |  `source`   |
-|                   [stasis](packages/sources/stasis/README.md)                    | `1.1.10` |  `source`   |
-|             [synth-index](packages/composites/synth-index/README.md)             | `1.0.35` | `composite` |
-|      [synthetix-debt-pool](packages/sources/synthetix-debt-pool/README.md)       | `1.3.0`  |  `source`   |
-|                    [taapi](packages/sources/taapi/README.md)                     | `1.1.10` |  `source`   |
-|      [terra-view-function](packages/sources/terra-view-function/README.md)       | `1.1.10` |  `source`   |
-|               [the-graph](packages/composites/the-graph/README.md)               | `1.0.25` | `composite` |
-|               [therundown](packages/sources/therundown/README.md)                | `1.2.10` |  `source`   |
-|                   [tiingo](packages/sources/tiingo/README.md)                    | `1.6.10` |  `source`   |
-|        [token-allocation](packages/composites/token-allocation/README.md)        | `1.0.35` | `composite` |
-|               [tradermade](packages/sources/tradermade/README.md)                | `1.6.7`  |  `source`   |
-|         [tradingeconomics](packages/sources/tradingeconomics/README.md)          | `1.1.10` |  `source`   |
-|                  [trueusd](packages/sources/trueusd/README.md)                   | `1.1.10` |  `source`   |
-|               [twelvedata](packages/sources/twelvedata/README.md)                | `1.1.10` |  `source`   |
-|                   [unibit](packages/sources/unibit/README.md)                    | `1.3.5`  |  `source`   |
-|               [uniswap-v2](packages/sources/uniswap-v2/README.md)                | `1.1.10` |  `source`   |
-|               [uniswap-v3](packages/sources/uniswap-v3/README.md)                | `1.1.10` |  `source`   |
-|                   [upvest](packages/sources/upvest/README.md)                    | `1.2.10` |  `source`   |
-|                [uscpi-one](packages/sources/uscpi-one/README.md)                 | `1.1.10` |  `source`   |
-|                  [vesper](packages/composites/vesper/README.md)                  | `1.0.35` | `composite` |
-|            [view-function](packages/sources/view-function/README.md)             | `1.1.10` |  `source`   |
-|         [wbtc-address-set](packages/sources/wbtc-address-set/README.md)          | `1.3.7`  |  `source`   |
-|                 [wootrade](packages/sources/wootrade/README.md)                  | `1.1.10` |  `source`   |
-|                  [wrapped](packages/sources/wrapped/README.md)                   | `2.1.10` |  `source`   |
-|                     [xbto](packages/sources/xbto/README.md)                      | `1.2.10` |  `source`   |
-|            [xsushi-price](packages/composites/xsushi-price/README.md)            | `1.0.35` | `composite` |
+|                                       Name                                       | Version  |    Type     |                                                Endpoints                                                 |    Default Endpoint    |
+| :------------------------------------------------------------------------------: | :------: | :---------: | :------------------------------------------------------------------------------------------------------: | :--------------------: |
+|                   [1forge](packages/sources/1forge/README.md)                    | `1.4.9`  |  `source`   |                                  `convert`, `forex`, `price`, `quotes`                                   |        `quotes`        |
+|              [accuweather](packages/sources/accuweather/README.md)               | `1.1.10` |  `source`   |                     `current-conditions`, `location`, `location-current-conditions`                      |        Unknown         |
+|              [ada-balance](packages/sources/ada-balance/README.md)               | `2.3.3`  |  `source`   |                                                `balance`                                                 |       `balance`        |
+|                   [agoric](packages/targets/agoric/README.md)                    | `2.0.10` |  `target`   |                                                 Unknown                                                  |        Unknown         |
+|               [alphachain](packages/sources/alphachain/README.md)                | `1.1.10` |  `source`   |                                               `dataquery`                                                |      `dataquery`       |
+|             [alphavantage](packages/sources/alphavantage/README.md)              | `1.1.10` |  `source`   |                                             `forex`, `price`                                             |        `forex`         |
+|                   [alpine](packages/sources/alpine/README.md)                    | `1.1.10` |  `source`   |                                            `lastblock`, `tvl`                                            |        Unknown         |
+|                [amberdata](packages/sources/amberdata/README.md)                 | `1.3.6`  |  `source`   |                 `balance`, `crypto`, `gasprice`, `marketcap`, `price`, `token`, `volume`                 |        Unknown         |
+|                  [anchor](packages/composites/anchor/README.md)                  | `1.1.24` | `composite` |                                                 `price`                                                  |        `price`         |
+|                 [anyblock](packages/sources/anyblock/README.md)                  | `1.1.10` |  `source`   |                                            `gasprice`, `vwap`                                            |         `vwap`         |
+|              [ap-election](packages/sources/ap-election/README.md)               | `1.1.10` |  `source`   |                                                `election`                                                |       `election`       |
+|             [apy-finance](packages/composites/apy-finance/README.md)             | `1.0.35` | `composite` |                                           `allocations`, `tvl`                                           |         `tvl`          |
+|                   [augur](packages/composites/augur/README.md)                   | `1.0.26` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                      [bea](packages/sources/bea/README.md)                       | `1.1.10` |  `source`   |                                                `average`                                                 |       `average`        |
+|                  [binance](packages/sources/binance/README.md)                   | `1.2.10` |  `source`   |                                            `crypto`, `ticker`                                            |        `crypto`        |
+|              [binance-dex](packages/sources/binance-dex/README.md)               | `1.2.10` |  `source`   |                                                 `price`                                                  |        `price`         |
+|        [bitcoin-json-rpc](packages/composites/bitcoin-json-rpc/README.md)        | `1.0.26` | `composite` |                                                                                                          |      `difficulty`      |
+|                    [bitex](packages/sources/bitex/README.md)                     | `1.3.10` |  `source`   |                                           `crypto`, `tickers`                                            |        `crypto`        |
+|                    [bitso](packages/sources/bitso/README.md)                     | `1.2.10` |  `source`   |                                            `crypto`, `ticker`                                            |        `crypto`        |
+|           [blockchain.com](packages/sources/blockchain.com/README.md)            | `1.1.10` |  `source`   |                                    `balance`, `difficulty`, `height`                                     |       `balance`        |
+|               [blockchair](packages/sources/blockchair/README.md)                | `1.1.10` |  `source`   |                                `balance`, `difficulty`, `height`, `stats`                                |       `balance`        |
+|              [blockcypher](packages/sources/blockcypher/README.md)               | `1.2.10` |  `source`   |                                                `balance`                                                 |       `balance`        |
+|              [blockstream](packages/sources/blockstream/README.md)               | `1.2.10` |  `source`   |                                          `difficulty`, `height`                                          |      `difficulty`      |
+|                     [bob](packages/composites/bob/README.md)                     | `1.0.26` | `composite` |                                                                                                          |        `format`        |
+|             [bravenewcoin](packages/sources/bravenewcoin/README.md)              | `1.1.10` |  `source`   |                                        `crypto`, `price`, `vwap`                                         |        `crypto`        |
+|                  [btc.com](packages/sources/btc.com/README.md)                   | `1.2.10` |  `source`   |                                    `balance`, `difficulty`, `height`                                     |       `balance`        |
+|               [cache.gold](packages/sources/cache.gold/README.md)                | `1.2.10` |  `source`   |                                               `lockedGold`                                               |      `lockedGold`      |
+|             [cfbenchmarks](packages/sources/cfbenchmarks/README.md)              | `1.4.2`  |  `source`   |                                       `crypto`, `price`, `values`                                        |        `values`        |
+|     [chain-reserve-wallet](packages/sources/chain-reserve-wallet/README.md)      | `2.2.6`  |  `source`   |                                                 `wallet`                                                 |        `wallet`        |
+|         [circuit-breaker](packages/composites/circuit-breaker/README.md)         | `1.0.25` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                  [coinapi](packages/sources/coinapi/README.md)                   | `1.1.11` |  `source`   |                                       `assets`, `crypto`, `price`                                        |        `crypto`        |
+|                 [coinbase](packages/sources/coinbase/README.md)                  | `1.2.10` |  `source`   |                                            `crypto`, `price`                                             |        `crypto`        |
+|                [coincodex](packages/sources/coincodex/README.md)                 | `1.2.10` |  `source`   |                                                `getcoin`                                                 |       `getcoin`        |
+|                [coingecko](packages/sources/coingecko/README.md)                 | `1.1.11` |  `source`   |            `coins`, `crypto`, `dominance`, `globalmarketcap`, `marketcap`, `price`, `volume`             |        `crypto`        |
+|                 [coinlore](packages/sources/coinlore/README.md)                  | `1.2.10` |  `source`   |                                 `dominance`, `global`, `globalmarketcap`                                 |      `dominance`       |
+|            [coinmarketcap](packages/sources/coinmarketcap/README.md)             | `1.3.11` |  `source`   |          `crypto`, `dominance`, `globalmarketcap`, `historical`, `marketcap`, `price`, `volume`          |        `crypto`        |
+|              [coinmetrics](packages/sources/coinmetrics/README.md)               | `1.2.10` |  `source`   |                                    `burned`, `price`, `total-burned`                                     |        `price`         |
+|              [coinpaprika](packages/sources/coinpaprika/README.md)               | `1.2.0`  |  `source`   |            `coins`, `crypto`, `dominance`, `globalmarketcap`, `marketcap`, `price`, `volume`             |        `crypto`        |
+|              [coinranking](packages/sources/coinranking/README.md)               | `1.1.10` |  `source`   |                                      `crypto`, `marketcap`, `price`                                      |        `crypto`        |
+|                  [conflux](packages/targets/conflux/README.md)                   | `1.0.25` |  `target`   |                                                                                                          |       `conflux`        |
+|            [covid-tracker](packages/sources/covid-tracker/README.md)             | `1.2.10` |  `source`   |                                                   `us`                                                   |          `us`          |
+| [crypto-volatility-index](packages/composites/crypto-volatility-index/README.md) | `1.0.35` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|               [cryptoapis](packages/sources/cryptoapis/README.md)                | `1.1.10` |  `source`   |                           `balance`, `crypto`, `difficulty`, `height`, `price`                           |        `crypto`        |
+|            [cryptoapis-v2](packages/sources/cryptoapis-v2/README.md)             | `1.1.10` |  `source`   |                                `balance`, `difficulty`, `height`, `price`                                |        `price`         |
+|            [cryptocompare](packages/sources/cryptocompare/README.md)             | `1.2.11` |  `source`   |                                 `crypto`, `marketcap`, `price`, `volume`                                 |        `crypto`        |
+|                 [cryptoid](packages/sources/cryptoid/README.md)                  | `1.2.10` |  `source`   |                                          `difficulty`, `height`                                          |      `difficulty`      |
+|                [cryptomkt](packages/sources/cryptomkt/README.md)                 | `1.2.10` |  `source`   |                                            `crypto`, `ticker`                                            |        `crypto`        |
+|            [currencylayer](packages/sources/currencylayer/README.md)             | `1.3.8`  |  `source`   |                                   `convert`, `forex`, `live`, `price`                                    |       `convert`        |
+|                    [curve](packages/sources/curve/README.md)                     | `1.1.10` |  `source`   |                                                 `crypto`                                                 |        `crypto`        |
+|              [defi-dozen](packages/composites/defi-dozen/README.md)              | `1.0.35` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|              [defi-pulse](packages/composites/defi-pulse/README.md)              | `1.0.35` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                  [deribit](packages/sources/deribit/README.md)                   | `1.1.10` |  `source`   |                                                 `crypto`                                                 |        `crypto`        |
+|                [dns-query](packages/sources/dns-query/README.md)                 | `1.2.5`  |  `source`   |                                                `dnsQuery`                                                |       `dnsQuery`       |
+|        [dns-record-check](packages/composites/dns-record-check/README.md)        | `1.1.5`  | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                    [durin](packages/sources/durin/README.md)                     | `1.1.10` |  `source`   |                                            `optimism-gateway`                                            |   `optimism-gateway`   |
+|                   [dwolla](packages/sources/dwolla/README.md)                    | `1.1.10` |  `source`   |                                                 `dwolla`                                                 |        `dwolla`        |
+|                   [dxdao](packages/composites/dxdao/README.md)                   | `1.0.35` | `composite` |                                                                                                          |        Unknown         |
+|                   [dxfeed](packages/sources/dxfeed/README.md)                    | `1.2.12` |  `source`   |                            `commodities`, `crypto`, `forex`, `price`, `stock`                            |        `price`         |
+|         [dxfeed-secondary](packages/sources/dxfeed-secondary/README.md)          | `1.1.24` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|            [dydx-rewards](packages/composites/dydx-rewards/README.md)            | `1.1.0`  | `composite` |                                                 Unknown                                                  |        Unknown         |
+|               [dydx-stark](packages/targets/dydx-stark/README.md)                | `1.0.25` |  `target`   |                                                                                                          |         `send`         |
+|                   [enzyme](packages/sources/enzyme/README.md)                    | `1.1.10` |  `source`   |                           `calcGav`, `calcNav`, `calcNetValueForSharesHolder`                            |       `calcNav`        |
+|        [eodhistoricaldata](packages/sources/eodhistoricaldata/README.md)         | `1.2.10` |  `source`   |                                             `price`, `stock`                                             |        `stock`         |
+|              [eth-balance](packages/sources/eth-balance/README.md)               | `1.1.10` |  `source`   |                                                `balance`                                                 |       `balance`        |
+|               [etherchain](packages/sources/etherchain/README.md)                | `1.2.10` |  `source`   |                                                `gasprice`                                                |       `gasprice`       |
+|                [etherscan](packages/sources/etherscan/README.md)                 | `1.2.10` |  `source`   |                                                `gasprice`                                                |       `gasprice`       |
+|            [ethgasstation](packages/sources/ethgasstation/README.md)             | `1.2.10` |  `source`   |                                                `gasprice`                                                |       `gasprice`       |
+|              [ethgaswatch](packages/sources/ethgaswatch/README.md)               | `1.2.10` |  `source`   |                                                `gasprice`                                                |       `gasprice`       |
+|                 [ethwrite](packages/targets/ethwrite/README.md)                  | `1.0.25` |  `target`   |                                                                                                          |        `txsend`        |
+|        [expert-car-broker](packages/sources/expert-car-broker/README.md)         | `1.2.10` |  `source`   |                                                  `feed`                                                  |         `feed`         |
+|                   [fcsapi](packages/sources/fcsapi/README.md)                    | `1.0.25` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|                   [finage](packages/sources/finage/README.md)                    | `1.3.11` |  `source`   |                                    `crypto`, `eod`, `forex`, `stock`                                     |        `stock`         |
+|                  [finnhub](packages/sources/finnhub/README.md)                   | `1.0.25` |  `source`   |                                                 Unknown                                                  |        `quote`         |
+|                    [fixer](packages/sources/fixer/README.md)                     | `1.3.8`  |  `source`   |                                  `convert`, `forex`, `latest`, `price`                                   |       `convert`        |
+|              [flightaware](packages/sources/flightaware/README.md)               | `1.1.10` |  `source`   |                               `actualarrivaltime`, `estimatedarrivaltime`                                | `estimatedarrivaltime` |
+|                 [fmpcloud](packages/sources/fmpcloud/README.md)                  | `1.2.10` |  `source`   |                                        `price`, `quote`, `stock`                                         |        `stock`         |
+|                   [gemini](packages/sources/gemini/README.md)                    | `2.1.10` |  `source`   |                                                `reserves`                                                |       `reserves`       |
+|       [genesis-volatility](packages/sources/genesis-volatility/README.md)        | `1.2.10` |  `source`   |                                               `volatility`                                               |      `volatility`      |
+|                    [geodb](packages/sources/geodb/README.md)                     | `1.1.10` |  `source`   |                                                `matches`                                                 |       `matches`        |
+|          [google-bigquery](packages/sources/google-bigquery/README.md)           | `1.1.10` |  `source`   |                                                `bigquery`                                                |        Unknown         |
+|          [google-weather](packages/composites/google-weather/README.md)          | `1.0.26` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                  [graphql](packages/sources/graphql/README.md)                   | `1.1.10` |  `source`   |                                                `graphql`                                                 |       `graphql`        |
+|                  [harmony](packages/targets/harmony/README.md)                   | `1.0.25` |  `target`   |                                                 Unknown                                                  |        Unknown         |
+|      [historical-average](packages/composites/historical-average/README.md)      | `1.0.22` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                [iex-cloud](packages/sources/iex-cloud/README.md)                 | `1.1.10` |  `source`   |                                  `crypto`, `eod`, `eod-close`, `stock`                                   |        `stock`         |
+|                 [intrinio](packages/sources/intrinio/README.md)                  | `1.1.10` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|                     [ipfs](packages/sources/ipfs/README.md)                      | `1.2.6`  |  `source`   |                                             `read`, `write`                                              |         `read`         |
+|                 [json-rpc](packages/sources/json-rpc/README.md)                  | `1.1.21` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|                    [kaiko](packages/sources/kaiko/README.md)                     | `1.0.25` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|  [layer2-sequencer-health](packages/sources/layer2-sequencer-health/README.md)   | `1.0.25` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|                      [lcx](packages/sources/lcx/README.md)                       | `1.1.21` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|          [linear-finance](packages/composites/linear-finance/README.md)          | `1.1.32` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                 [linkpool](packages/sources/linkpool/README.md)                  | `1.0.25` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|                   [lition](packages/sources/lition/README.md)                    | `1.1.10` |  `source`   |                                                 `energy`                                                 |        `energy`        |
+|                    [lotus](packages/sources/lotus/README.md)                     | `2.1.10` |  `source`   |                                   `Filecoin.WalletBalance`, `balance`                                    |       `balance`        |
+|          [market-closure](packages/composites/market-closure/README.md)          | `1.0.25` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|              [marketstack](packages/sources/marketstack/README.md)               | `1.2.10` |  `source`   |                                              `eod`, `stock`                                              |        `stock`         |
+|              [medianizer](packages/composites/medianizer/README.md)              | `1.0.25` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                  [messari](packages/sources/messari/README.md)                   | `1.1.10` |  `source`   |                                          `assets`, `dominance`                                           |        `assets`        |
+|                [metalsapi](packages/sources/metalsapi/README.md)                 | `1.6.7`  |  `source`   |                                       `convert`, `forex`, `latest`                                       |        `forex`         |
+|              [mycryptoapi](packages/sources/mycryptoapi/README.md)               | `1.2.10` |  `source`   |                                                `gasprice`                                                |       `gasprice`       |
+|                     [ncfx](packages/sources/ncfx/README.md)                      | `1.1.12` |  `source`   |                                            `crypto`, `forex`                                             |        `crypto`        |
+|                   [nikkei](packages/sources/nikkei/README.md)                    | `1.1.20` |  `source`   |                                             `price`, `stock`                                             |        `stock`         |
+|                   [nomics](packages/sources/nomics/README.md)                    | `1.0.26` |  `source`   |                 `crypto`, `filtered`, `globalmarketcap`, `marketcap`, `price`, `volume`                  |        `crypto`        |
+|              [oilpriceapi](packages/sources/oilpriceapi/README.md)               | `2.0.10` |  `source`   |                                                 `price`                                                  |        `price`         |
+|              [onchain-gas](packages/sources/onchain-gas/README.md)               | `1.1.10` |  `source`   |                                                  `gas`                                                   |         `gas`          |
+|        [openexchangerates](packages/sources/openexchangerates/README.md)         | `1.3.8`  |  `source`   |                                             `forex`, `price`                                             |        `forex`         |
+|         [orchid-bandwidth](packages/sources/orchid-bandwidth/README.md)          | `1.1.10` |  `source`   |                                               `bandwidth`                                                |      `bandwidth`       |
+|       [outlier-detection](packages/composites/outlier-detection/README.md)       | `1.0.44` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                    [paxos](packages/sources/paxos/README.md)                     | `1.2.10` |  `source`   |                                            `assetAttestation`                                            |   `assetAttestation`   |
+|                   [paypal](packages/sources/paypal/README.md)                    | `1.1.10` |  `source`   |                                `getpayout`, `read`, `sendpayout`, `write`                                |      `sendpayout`      |
+|                      [poa](packages/sources/poa/README.md)                       | `1.2.10` |  `source`   |                                                `gasprice`                                                |       `gasprice`       |
+|                  [polygon](packages/sources/polygon/README.md)                   | `1.4.8`  |  `source`   |                                `conversion`, `forex`, `price`, `tickers`                                 |       `tickers`        |
+|             [por-indexer](packages/composites/por-indexer/README.md)             | `1.0.8`  | `composite` |                                                 Unknown                                                  |        Unknown         |
+|       [proof-of-reserves](packages/composites/proof-of-reserves/README.md)       | `1.4.7`  | `composite` |                                                 Unknown                                                  |        Unknown         |
+|                   [reduce](packages/sources/reduce/README.md)                    | `1.1.21` |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|     [reference-transform](packages/composites/reference-transform/README.md)     | `1.0.44` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|        [renvm-address-set](packages/sources/renvm-address-set/README.md)         | `1.2.7`  |  `source`   |                                                 Unknown                                                  |        Unknown         |
+|             [satoshitango](packages/sources/satoshitango/README.md)              | `1.2.10` |  `source`   |                                            `crypto`, `ticker`                                            |        `crypto`        |
+|         [set-token-index](packages/composites/set-token-index/README.md)         | `1.0.35` | `composite` |                                  `allocations`, `token-index`, `tokens`                                  |     `token-index`      |
+|                [snowflake](packages/sources/snowflake/README.md)                 | `1.1.10` |  `source`   |                                              `covid-cases`                                               |     `covid-cases`      |
+|                  [sochain](packages/sources/sochain/README.md)                   | `1.2.10` |  `source`   |                                                `balance`                                                 |       `balance`        |
+|     [spectral-macro-score](packages/sources/spectral-macro-score/README.md)      | `1.1.10` |  `source`   |                                             `spectral-proxy`                                             |    `spectral-proxy`    |
+|             [sportsdataio](packages/sources/sportsdataio/README.md)              | `1.1.24` |  `source`   |                                                 Unknown                                                  |        `scores`        |
+|                   [stasis](packages/sources/stasis/README.md)                    | `1.1.10` |  `source`   |                                                 `supply`                                                 |        `supply`        |
+|             [synth-index](packages/composites/synth-index/README.md)             | `1.0.35` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|      [synthetix-debt-pool](packages/sources/synthetix-debt-pool/README.md)       | `1.3.0`  |  `source`   |                                                  `debt`                                                  |         `debt`         |
+|                    [taapi](packages/sources/taapi/README.md)                     | `1.1.10` |  `source`   |                                               `indicator`                                                |      `indicator`       |
+|      [terra-view-function](packages/sources/terra-view-function/README.md)       | `1.1.10` |  `source`   |                                                  `view`                                                  |         `view`         |
+|               [the-graph](packages/composites/the-graph/README.md)               | `1.0.25` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|               [therundown](packages/sources/therundown/README.md)                | `1.2.10` |  `source`   |                                     `event`, `events`, `total-score`                                     |     `total-score`      |
+|                   [tiingo](packages/sources/tiingo/README.md)                    | `1.6.10` |  `source`   | `commodities`, `crypto`, `crypto-synth`, `eod`, `forex`, `fx`, `iex`, `prices`, `stock`, `top`, `volume` |        `crypto`        |
+|        [token-allocation](packages/composites/token-allocation/README.md)        | `1.0.35` | `composite` |                                                 Unknown                                                  |        Unknown         |
+|               [tradermade](packages/sources/tradermade/README.md)                | `1.6.7`  |  `source`   |                                 `commodities`, `forex`, `live`, `stock`                                  |         `live`         |
+|         [tradingeconomics](packages/sources/tradingeconomics/README.md)          | `1.1.10` |  `source`   |                                                 `price`                                                  |        `price`         |
+|                  [trueusd](packages/sources/trueusd/README.md)                   | `1.1.10` |  `source`   |                                                `trueusd`                                                 |       `trueusd`        |
+|               [twelvedata](packages/sources/twelvedata/README.md)                | `1.1.10` |  `source`   |                          `closing`, `crypto`, `eod`, `forex`, `price`, `stock`                           |       `closing`        |
+|                   [unibit](packages/sources/unibit/README.md)                    | `1.3.5`  |  `source`   |                                           `eod`, `historical`                                            |      `historical`      |
+|               [uniswap-v2](packages/sources/uniswap-v2/README.md)                | `1.1.10` |  `source`   |                                                 `crypto`                                                 |        `crypto`        |
+|               [uniswap-v3](packages/sources/uniswap-v3/README.md)                | `1.1.10` |  `source`   |                                                 `crypto`                                                 |        `crypto`        |
+|                   [upvest](packages/sources/upvest/README.md)                    | `1.2.10` |  `source`   |                                                `gasprice`                                                |       `gasprice`       |
+|                [uscpi-one](packages/sources/uscpi-one/README.md)                 | `1.1.10` |  `source`   |                                                 `series`                                                 |        `series`        |
+|                  [vesper](packages/composites/vesper/README.md)                  | `1.0.35` | `composite` |                                           `allocations`, `tvl`                                           |         `tvl`          |
+|            [view-function](packages/sources/view-function/README.md)             | `1.1.10` |  `source`   |                                                `function`                                                |       `function`       |
+|         [wbtc-address-set](packages/sources/wbtc-address-set/README.md)          | `1.3.7`  |  `source`   |                                          `addresses`, `members`                                          |      `addresses`       |
+|                 [wootrade](packages/sources/wootrade/README.md)                  | `1.1.10` |  `source`   |                                            `crypto`, `ticker`                                            |        `crypto`        |
+|                  [wrapped](packages/sources/wrapped/README.md)                   | `2.1.10` |  `source`   |                                                `deposits`                                                |       `deposits`       |
+|                     [xbto](packages/sources/xbto/README.md)                      | `1.2.10` |  `source`   |                                                 `price`                                                  |        `price`         |
+|            [xsushi-price](packages/composites/xsushi-price/README.md)            | `1.0.35` | `composite` |                                   `crypto`, `price`, `ratio`, `sushi`                                    |        `price`         |

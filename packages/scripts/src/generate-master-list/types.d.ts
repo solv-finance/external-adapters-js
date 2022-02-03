@@ -1,17 +1,17 @@
-// import { InputParameters } from '@chainlink/types'
+import { InputParameters } from '@chainlink/types'
 
 export type FileData = {
   path: string
   text: string
 }
 
-// export type EndpointDetails = {
-//   [endpointName: string]: {
-//     supportedEndpoints: string[]
-//     inputParameters: InputParameters
-//     description?: string
-//   }
-// }
+export type EndpointDetails = {
+  [endpointName: string]: {
+    supportedEndpoints: string[]
+    inputParameters: InputParameters
+    description?: string
+  }
+}
 
 // export type EnvVars = {
 //   [envVar: string]: {
