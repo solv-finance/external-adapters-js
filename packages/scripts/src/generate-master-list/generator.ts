@@ -20,12 +20,14 @@ const getAdapterList = (list: string[], description: string): string => {
 const getRedirectText = (path: string) => (name: string) => `- [${name}](${path}${name}/README.md)`
 
 const saveText = (fileData: FileData[], stage: boolean): void => {
-  let shellString: shell.ShellString
   for (const file of fileData) {
-    shellString = new shell.ShellString(file.text)
-    shellString.to(file.path)
+    shell.exec(`echo ${file.text} > ${file.path}`)
 
-    if (stage) shell.exec(`git add ${file.path}`)
+    if (stage)
+      shell.exec(`git add ${file.path}`, {
+        fatal: true,
+        silent: true,
+      })
 
     console.log(`${file.path} has been saved`)
   }
@@ -33,44 +35,55 @@ const saveText = (fileData: FileData[], stage: boolean): void => {
 
 export const generateMasterList = (stage = false): void => {
   shell.exec('git stash', {
-    fatal: true,
+    fatal: true, // TODO investigate weird file revert behavior
     silent: true,
   })
 
-  const compositeAdapters = shell.ls('-A', pathToComposites).filter((name) => name !== 'README.md')
-  const compositeRedirectList = compositeAdapters.map(getRedirectText('./'))
-  const compositeAdapterText = getAdapterList(compositeRedirectList, compositeListDescription)
+  try {
+    const compositeAdapters = shell
+      .ls('-A', pathToComposites)
+      .filter((name) => name !== 'README.md')
+    const compositeRedirectList = compositeAdapters.map(getRedirectText('./'))
+    const compositeAdapterText = getAdapterList(compositeRedirectList, compositeListDescription)
 
-  const sourceAdapters = shell.ls('-A', pathToSources).filter((name) => name !== 'README.md')
-  const sourceRedirectList = sourceAdapters.map(getRedirectText('./'))
-  const sourceAdapterText = getAdapterList(sourceRedirectList, sourceListDescription)
+    const sourceAdapters = shell.ls('-A', pathToSources).filter((name) => name !== 'README.md')
+    const sourceRedirectList = sourceAdapters.map(getRedirectText('./'))
+    const sourceAdapterText = getAdapterList(sourceRedirectList, sourceListDescription)
 
-  const targetAdapters = shell.ls('-A', pathToTargets).filter((name) => name !== 'README.md')
-  const targetRedirectList = targetAdapters.map(getRedirectText('./'))
-  const targetAdapterText = getAdapterList(targetRedirectList, targetListDescription)
+    const targetAdapters = shell.ls('-A', pathToTargets).filter((name) => name !== 'README.md')
+    const targetRedirectList = targetAdapters.map(getRedirectText('./'))
+    const targetAdapterText = getAdapterList(targetRedirectList, targetListDescription)
 
-  const allRedirectList = [
-    ...compositeAdapters.map(getRedirectText('./' + pathToComposites)),
-    ...sourceAdapters.map(getRedirectText('./' + pathToSources)),
-    ...targetAdapters.map(getRedirectText('./' + pathToTargets)),
-  ].sort()
+    const allRedirectList = [
+      ...compositeAdapters.map(getRedirectText('./' + pathToComposites)),
+      ...sourceAdapters.map(getRedirectText('./' + pathToSources)),
+      ...targetAdapters.map(getRedirectText('./' + pathToTargets)),
+    ].sort()
 
-  // TODO replace this one with full table
-  const allAdapterText = getAdapterList(allRedirectList, allListDescription)
-  console.log({ allAdapterText })
+    // TODO replace this one with full table
+    const allAdapterText = getAdapterList(allRedirectList, allListDescription)
+    console.log({ allAdapterText })
 
-  saveText(
-    [
-      { path: pathToComposites + 'README.md', text: compositeAdapterText },
-      { path: pathToSources + 'README.md', text: sourceAdapterText },
-      { path: pathToTargets + 'README.md', text: targetAdapterText },
-      { path: 'MASTERLIST.md', text: allAdapterText },
-    ],
-    stage,
-  )
+    saveText(
+      [
+        { path: pathToComposites + 'README.md', text: compositeAdapterText },
+        { path: pathToSources + 'README.md', text: sourceAdapterText },
+        { path: pathToTargets + 'README.md', text: targetAdapterText },
+        { path: 'MASTERLIST.md', text: allAdapterText },
+      ],
+      stage,
+    )
 
-  shell.exec('git stash pop', {
-    fatal: true,
-    silent: true,
-  })
+    shell.exec('git stash pop', {
+      // fatal: true, //TODO investigate weird file behavior
+      // silent: true,
+    })
+  } catch (error) {
+    console.log({ error: error.message, stack: error.stack })
+    shell.exec('git stash pop', {
+      // fatal: true, //TODO investigate weird file behavior
+      // silent: true,
+    })
+    throw Error(error)
+  }
 }
