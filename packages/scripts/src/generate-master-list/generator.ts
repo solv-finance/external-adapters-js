@@ -5,7 +5,7 @@ import {
   targetListDescription,
 } from './textAssets'
 import { buildTable } from './table'
-import { EndpointDetails, FileData, JsonObject, Package } from './types'
+import { EndpointDetails, FileData, JsonObject, Package, Schema } from './types'
 
 const pathToComposites = 'packages/composites/'
 const pathToSources = 'packages/sources/'
@@ -43,6 +43,8 @@ const getEndpoints = async (adapterPath: string) => {
     return list
   }, [])
 
+  if (!allSupportedEndpoints.length) return 'Unknown'
+
   return allSupportedEndpoints.sort().map(wrapCode).join(', ')
 }
 
@@ -53,6 +55,19 @@ const getDefaultEndpoint = async (adapterPath: string) => {
   const config = await require(localPathToRoot + configPath)
 
   return config.DEFAULT_ENDPOINT ? wrapCode(config.DEFAULT_ENDPOINT) : 'Unknown'
+}
+
+const getEnvVars = (adapterPath: string) => {
+  const schemaPath = adapterPath + '/schemas/env.json'
+  if (!shell.test('-f', schemaPath)) return 'Unknown'
+
+  const { properties = {}, required = [] } = getJsonFile(schemaPath) as Schema
+
+  const envVars = Object.keys(properties)
+
+  const formatted = envVars.sort().map((e) => wrapCode(e) + (required.includes(e) ? ' (✅)' : ''))
+
+  return formatted.join(', ')
 }
 
 const getVersion = (adapterPath: string) => {
@@ -132,9 +147,8 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         const version = getVersion(adapter.path)
         const endpoints = await getEndpoints(adapter.path)
         const defaultEndpoint = await getDefaultEndpoint(adapter.path)
+        const envVars = getEnvVars(adapter.path)
         /*TODO
-        - NAME (taken from src/index.ts, but lowercase, '_' => ' ' and capitalize first letter of each word)
-        - Env vars
         - API sources
         - License
         - WS Support
@@ -142,8 +156,9 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         - Endpoint batching
         - Supported tests (integration, unit, e2e (link to each folder))
         - Other adapter dependencies from schema (link to other READMEs)
+        - NAME (taken from src/index.ts, but lowercase, '_' => ' ' and capitalize first letter of each word)
         */
-        return [adapter.redirect, version, adapter.type, endpoints, defaultEndpoint]
+        return [adapter.redirect, version, adapter.type, envVars, endpoints, defaultEndpoint]
       }),
     )
 
@@ -151,6 +166,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       'Name',
       'Version',
       'Type',
+      'Environment Variables (✅ = required)',
       'Endpoints',
       'Default Endpoint',
     ])

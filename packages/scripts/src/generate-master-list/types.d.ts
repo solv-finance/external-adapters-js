@@ -13,14 +13,14 @@ export type EndpointDetails = {
   }
 }
 
-// export type EnvVars = {
-//   [envVar: string]: {
-//     default?: string | number
-//     description?: string
-//     options?: (string | number)[]
-//     type?: string
-//   }
-// }
+export type EnvVars = {
+  [envVar: string]: {
+    default?: string | number
+    description?: string
+    options?: (string | number)[]
+    type?: string
+  }
+}
 
 export type JsonObject = { [key: string]: any }
 
@@ -31,12 +31,12 @@ export type Package = {
   version?: string
 }
 
-// export type Schema = {
-//   title?: string
-//   description?: string
-//   properties?: EnvVars
-//   required?: string[]
-// }
+export type Schema = {
+  title?: string
+  description?: string
+  properties?: EnvVars
+  required?: string[]
+}
 
 export type TableText = string[][]
 
