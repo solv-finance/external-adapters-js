@@ -46,7 +46,7 @@ export async function main(): Promise<void | string> {
 
     console.log('Generating master adapter lists.')
 
-    await generateMasterList(options.stage)
+    await generateMasterList(options.stage, options.verbose)
 
     console.log(`Master adapter lists generated.`)
     process.exit(0)

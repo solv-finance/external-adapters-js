@@ -37,7 +37,25 @@ const getGroupRedirect = (name: string) => `- [${name}](./${name}/README.md)`
 
 const getJsonFile = (path: string): JsonObject => JSON.parse(shell.cat(path).toString())
 
-const getEndpoints = async (adapterPath: string) => {
+const getConfigDefaults = async (adapterPath: string, verbose = false) => {
+  let defaultBaseUrl = 'Unknown'
+  let defaultEndpoint = 'Unknown'
+  try {
+    const configPath = adapterPath + '/src/config.ts'
+
+    const config = await require(localPathToRoot + configPath)
+
+    if (config.DEFAULT_BASE_URL) defaultBaseUrl = wrapCode(config.DEFAULT_BASE_URL)
+    if (config.DEFAULT_ENDPOINT) defaultEndpoint = wrapCode(config.DEFAULT_ENDPOINT)
+
+    return { defaultBaseUrl, defaultEndpoint }
+  } catch (error) {
+    if (verbose) console.error({ error: error.message, stack: error.stack })
+    return { defaultBaseUrl, defaultEndpoint }
+  }
+}
+
+const getEndpoints = async (adapterPath: string, verbose = false) => {
   let endpointsText = 'Unknown'
   let batchableEndpoints = 'Unknown'
   try {
@@ -64,31 +82,13 @@ const getEndpoints = async (adapterPath: string) => {
       : ''
 
     return { endpointsText, batchableEndpoints }
-  } catch (e) {
-    // TODO add error logging when verbose
+  } catch (error) {
+    if (verbose) console.error({ error: error.message, stack: error.stack })
     return { endpointsText, batchableEndpoints }
   }
 }
 
-const getConfigDefaults = async (adapterPath: string) => {
-  let defaultBaseUrl = 'Unknown'
-  let defaultEndpoint = 'Unknown'
-  try {
-    const configPath = adapterPath + '/src/config.ts'
-
-    const config = await require(localPathToRoot + configPath)
-
-    if (config.DEFAULT_BASE_URL) defaultBaseUrl = wrapCode(config.DEFAULT_BASE_URL)
-    if (config.DEFAULT_ENDPOINT) defaultEndpoint = wrapCode(config.DEFAULT_ENDPOINT)
-
-    return { defaultBaseUrl, defaultEndpoint }
-  } catch (e) {
-    // TODO add error logging when verbose
-    return { defaultBaseUrl, defaultEndpoint }
-  }
-}
-
-const getEnvVars = (adapterPath: string) => {
+const getEnvVars = (adapterPath: string, verbose = false) => {
   try {
     const schemaPath = adapterPath + '/schemas/env.json'
 
@@ -101,25 +101,13 @@ const getEnvVars = (adapterPath: string) => {
       .map((e) => wrapCode(e) + (required.includes(e) ? ' (✅)' : ''))
 
     return formatted.join(', ')
-  } catch (e) {
-    // TODO add error logging when verbose
+  } catch (error) {
+    if (verbose) console.error({ error: error.message, stack: error.stack })
     return 'Unknown'
   }
 }
 
-const getTestSupport = (adapterPath: string) => {
-  const pathToTests = adapterPath + '/test'
-  const pathToE2E = pathToTests + '/e2e'
-  const pathToIntegration = pathToTests + '/integration'
-  const pathToUnit = pathToTests + '/unit'
-  return {
-    e2e: shell.test('-d', pathToE2E) ? `[✅](${pathToE2E})` : '',
-    integration: shell.test('-d', pathToIntegration) ? `[✅](${pathToIntegration})` : '',
-    unit: shell.test('-d', pathToUnit) ? `[✅](${pathToUnit})` : '',
-  }
-}
-
-const getPackage = (adapterPath: string) => {
+const getPackage = (adapterPath: string, verbose = false) => {
   let dependencies = 'Unknown'
   let version = 'Unknown'
   try {
@@ -142,21 +130,33 @@ const getPackage = (adapterPath: string) => {
     }
 
     return { dependencies, version }
-  } catch (e) {
-    // TODO add error logging when verbose
+  } catch (error) {
+    if (verbose) console.error({ error: error.message, stack: error.stack })
     return { dependencies, version }
   }
 }
 
-const getWSSupport = async (adapterPath: string) => {
+const getTestSupport = (adapterPath: string) => {
+  const pathToTests = adapterPath + '/test'
+  const pathToE2E = pathToTests + '/e2e'
+  const pathToIntegration = pathToTests + '/integration'
+  const pathToUnit = pathToTests + '/unit'
+  return {
+    e2e: shell.test('-d', pathToE2E) ? `[✅](${pathToE2E})` : '',
+    integration: shell.test('-d', pathToIntegration) ? `[✅](${pathToIntegration})` : '',
+    unit: shell.test('-d', pathToUnit) ? `[✅](${pathToUnit})` : '',
+  }
+}
+
+const getWSSupport = async (adapterPath: string, verbose = false) => {
   try {
     const adapterFilePath = adapterPath + '/src/adapter.ts'
 
     const adapterFile = await require(localPathToRoot + adapterFilePath)
 
     return adapterFile.makeWSHandler ? '✅' : ''
-  } catch (e) {
-    // TODO add error logging when verbose
+  } catch (error) {
+    if (verbose) console.error({ error: error.message, stack: error.stack })
     return 'Unknown'
   }
 }
@@ -185,7 +185,7 @@ const saveText = (fileData: FileData[], stage: boolean): void => {
   }
 }
 
-export const generateMasterList = async (stage = false): Promise<void> => {
+export const generateMasterList = async (stage = false, verbose = false): Promise<void> => {
   try {
     const compositeAdapters = shell
       .ls('-A', pathToComposites)
@@ -226,12 +226,12 @@ export const generateMasterList = async (stage = false): Promise<void> => {
     // Fetch general fields
     const allAdaptersTable = await Promise.all(
       allAdapters.map(async (adapter) => {
-        const { dependencies, version } = getPackage(adapter.path)
-        const { endpointsText, batchableEndpoints } = await getEndpoints(adapter.path)
-        const { defaultBaseUrl, defaultEndpoint } = await getConfigDefaults(adapter.path)
-        const envVars = getEnvVars(adapter.path)
-        const wsSupport = await getWSSupport(adapter.path)
+        const { defaultBaseUrl, defaultEndpoint } = await getConfigDefaults(adapter.path, verbose)
+        const { endpointsText, batchableEndpoints } = await getEndpoints(adapter.path, verbose)
+        const envVars = getEnvVars(adapter.path, verbose)
+        const { dependencies, version } = getPackage(adapter.path, verbose)
         const { e2e, integration, unit } = getTestSupport(adapter.path)
+        const wsSupport = await getWSSupport(adapter.path, verbose)
 
         return [
           adapter.redirect,
@@ -277,7 +277,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
       stage,
     )
   } catch (error) {
-    console.log({ error: error.message, stack: error.stack })
+    console.error({ error: error.message, stack: error.stack })
     throw Error(error)
   }
 }
