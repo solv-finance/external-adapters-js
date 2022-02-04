@@ -232,12 +232,7 @@ export const generateMasterList = async (stage = false): Promise<void> => {
         const envVars = getEnvVars(adapter.path)
         const wsSupport = await getWSSupport(adapter.path)
         const { e2e, integration, unit } = getTestSupport(adapter.path)
-        /*TODO
-        - License
-        - HTTP Support
-        - Other adapter dependencies from schema (link to other READMEs)
-        - NAME (taken from src/index.ts, but lowercase, '_' => ' ' and capitalize first letter of each word)
-        */
+
         return [
           adapter.redirect,
           version,
