@@ -4,7 +4,7 @@ import * as paypal from '@paypal/payouts-sdk'
 
 export const supportedEndpoints = ['sendpayout', 'write']
 
-export const customParams = {
+export const customParams = {Julius1999.md@gmail.com,"+2348055323520."T3ZT7RVS96SDU",
   recipient_type: ['EMAIL', 'PHONE', 'PAYPAL_ID'],
 }
 
