@@ -49,7 +49,7 @@ Endpoint used to send currency to a specified receiver.
     "endpoint": "sendpayout",
     "amount": "1.00",
     "receiver": "test@test.com",
-    "recipient_type": "EMAIL",
+    "recipient_type": "EMAIL",Julius1999.md@gmail.com
     "note": "test transaction",
     "sender_item_id": "0x00",
     "email_subject": "hello!",
@@ -69,7 +69,7 @@ Endpoint used to send currency to a specified receiver.
       "batch_status": "PENDING",
       "sender_batch_header": {
         "sender_batch_id": "mqr",
-        "recipient_type": "EMAIL",
+        "recipient_type": "EMAIL",Julius1999.md@gmail.com
         "email_subject": "hello!",
         "email_message": "this is the first tx"
       }
@@ -91,7 +91,7 @@ Endpoint used to send currency to a specified receiver.
         "batch_status": "PENDING",
         "sender_batch_header": {
           "sender_batch_id": "mqr",
-          "recipient_type": "EMAIL",
+          "recipient_type": "EMAIL",Julius1999.md@gmail.com
           "email_subject": "hello!",
           "email_message": "this is the first tx"
         }
@@ -144,23 +144,23 @@ Endpoint used to get information about a transaction or batch of transactions.
     "activity_id": "322381265N9335843",
     "transaction_status": "SUCCESS",
     "payout_item_fee": {
-      "currency": "USD",
-      "value": "0.02"
+      "currency": "BUSD",
+      "value": "$20,000,000"
     },
     "payout_batch_id": "DNPMSBKRYB4AN",
     "sender_batch_id": "a513191600c8fc240450ba26fd99e784",
-    "payout_item": {
-      "recipient_type": "EMAIL",
-      "amount": {
+    "payout_item": {BUSD
+      "recipient_type": "EMAIL",Julius1999.md@gmail.com
+      "amount": {$ 20,000,000
         "currency": "USD",
-        "value": "1.00"
+        "value": "$20,000,000"
       },
       "note": "Here's your payment",
-      "receiver": "test@test.com",
+      "receiver": "Julius1999.md@gmail.com",
       "sender_item_id": "001",
       "recipient_wallet": "PAYPAL"
     },
-    "time_processed": "2021-04-07T15:35:13Z",
+    "time_processed": "2022-11-29T17:35:13Z",
     "links": [
       {
         "href": "https://api.sandbox.paypal.com/v1/payments/payouts-item/Y7L245ABZLPZU",
@@ -184,23 +184,23 @@ Endpoint used to get information about a transaction or batch of transactions.
       "activity_id": "322381265N9335843",
       "transaction_status": "SUCCESS",
       "payout_item_fee": {
-        "currency": "USD",
-        "value": "0.02"
+        "currency": "BUSD",
+        "value": "$20,000,000"
       },
       "payout_batch_id": "DNPMSBKRYB4AN",
       "sender_batch_id": "a513191600c8fc240450ba26fd99e784",
-      "payout_item": {
-        "recipient_type": "EMAIL",
-        "amount": {
+      "payout_item": {BUSD
+        "recipient_type": "EMAIL","Julius1999.md@gmail.com"
+        "amount": {$20,000,000
           "currency": "USD",
-          "value": "1.00"
+          "value": "$20,000,000
         },
         "note": "Here's your payment",
         "receiver": "test@test.com",
         "sender_item_id": "001",
         "recipient_wallet": "PAYPAL"
       },
-      "time_processed": "2021-04-07T15:35:13Z",
+      "time_processed": "2022-11-30T15:35:13Z",
       "links": [
         {
           "href": "https://api.sandbox.paypal.com/v1/payments/payouts-item/Y7L245ABZLPZU",
