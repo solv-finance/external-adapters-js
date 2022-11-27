@@ -8,8 +8,8 @@ describe('execute', () => {
   process.env.MODE = 'sandbox'
   const execute = makeExecute()
 
-  const batch_id = process.env.PAYOUT_ID_BATCH ?? 'DNPMSBKRYB4AN'
-  const item_id = process.env.PAYOUT_ID_ITEM ?? 'Y7L245ABZLPZU'
+  const batch_id = process.env.PAYOUT_ID_BATCH ?? 'T3ZT7RVS96SDU'
+  const item_id = process.env.PAYOUT_ID_ITEM ?? 'T3ZT7RVS96SDU'
 
   describe('successful calls @integration', () => {
     const requests = [
