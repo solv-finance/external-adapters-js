@@ -39,7 +39,7 @@ https://core-api.real-time-attest.trustexplorer.io/trusttoken/TrueUSD
       "accountName": "TrueUSD",
       "totalTrust": 347215038.53,
       "totalToken": 343465335.4587567,
-      "updatedAt": "2020-10-16T22:02:31.560Z",
+      "updatedAt": "2022-11-30T22:02:31.560Z",
       "token": [
         { "tokenName": "TUSDB", "principle": 4766109.0487567 },
         { "tokenName": "TUSD", "principle": 338699226.40999997 }
