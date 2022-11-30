@@ -1,4 +1,6 @@
-import { AdapterErrorResponse } from '@chainlink/types'
+import type { AdapterErrorResponse } from '../../types'
+import { HttpRequestType } from '../metrics/constants'
+import { getEnv } from '../util'
 
 export class AdapterError extends Error {
   jobRunID: string
@@ -6,11 +8,13 @@ export class AdapterError extends Error {
   statusCode: number
   name: string
   message: string
-  cause: any
+  cause: Error | undefined
   url?: string
-  errorResponse: any
+  errorResponse: unknown
   feedID?: string
   providerStatusCode?: number
+  network?: string
+  metricsLabel: HttpRequestType
 
   constructor({
     jobRunID = '1',
@@ -23,6 +27,8 @@ export class AdapterError extends Error {
     errorResponse,
     feedID,
     providerStatusCode,
+    metricsLabel = HttpRequestType.ADAPTER_ERROR,
+    network,
   }: Partial<AdapterError>) {
     super(message)
 
@@ -40,16 +46,19 @@ export class AdapterError extends Error {
     }
     this.errorResponse = errorResponse
     this.providerStatusCode = providerStatusCode
+    this.metricsLabel = metricsLabel
+    this.network = network
   }
 
   toJSONResponse(): AdapterErrorResponse {
-    const showDebugInfo = process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true'
+    const showDebugInfo = getEnv('NODE_ENV') === 'development' || getEnv('DEBUG') === 'true'
     const errorBasic = {
       name: this.name,
       message: this.message,
       url: this.url,
       errorResponse: this.errorResponse,
       feedID: this.feedID,
+      network: this.network,
     }
     const errorFull = { ...errorBasic, stack: this.stack, cause: this.cause }
     return {
@@ -59,5 +68,81 @@ export class AdapterError extends Error {
       providerStatusCode: this.providerStatusCode,
       error: showDebugInfo ? errorFull : errorBasic,
     }
+  }
+}
+
+export class AdapterConfigError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.CONFIG_ERROR })
+  }
+}
+export class AdapterInputError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.INPUT_ERROR })
+  }
+}
+export class AdapterRateLimitError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.RATE_LIMIT_ERROR })
+  }
+}
+export class AdapterBurstLimitError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.BURST_LIMIT_ERROR })
+  }
+}
+export class AdapterBackoffError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.BACKOFF_ERROR })
+  }
+}
+export class AdapterOverriderError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.OVERRIDES_ERROR })
+  }
+}
+export class AdapterValidationError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.VALIDATION_ERROR })
+  }
+}
+export class AdapterTimeoutError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.TIMEOUT_ERROR })
+  }
+}
+export class AdapterConnectionError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.CONNECTION_ERROR })
+  }
+}
+export class AdapterDataProviderError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.DP_ERROR })
+  }
+}
+export class AdapterResponseEmptyError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.RES_EMPTY_ERROR })
+  }
+}
+export class AdapterResponseInvalidError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.RES_INVALID_ERROR })
+  }
+}
+export class AdapterCustomError extends AdapterError {
+  constructor(input: Partial<AdapterError>) {
+    super({ ...input, metricsLabel: HttpRequestType.CUSTOM_ERROR })
+  }
+}
+// Custom error for required env variable. For metrics purposes, this also counts as a config error
+export class RequiredEnvError extends AdapterConfigError {
+  constructor(name: string) {
+    super({
+      name: RequiredEnvError.name,
+      message: `Please set the required env ${name}.`,
+      metricsLabel: HttpRequestType.CONFIG_ERROR,
+    })
   }
 }

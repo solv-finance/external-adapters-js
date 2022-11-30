@@ -1,5 +1,5 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import { AdapterInputError, Requester, Validator } from '@chainlink/ea-bootstrap'
+import { Config, ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { create, IPFSHTTPClient } from 'ipfs-http-client'
 import { CID } from 'multiformats/cid'
 import { AsyncReturnType } from 'type-fest'
@@ -11,7 +11,8 @@ export const supportedEndpoints = ['read']
 
 export const description = 'Read data from IPFS'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { cid: string; ipns: string; codec: string; type: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   cid: {
     required: false,
     description: 'The CID to read. Required if IPNS is not set',
@@ -46,10 +47,12 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const type = validator.validated.data.type || 'raw'
 
   if (!cid && !ipns) {
-    throw Error('Request is missing both "cid" and "ipns". One is required.')
+    throw new AdapterInputError({
+      message: 'Request is missing both "cid" and "ipns". One is required.',
+    })
   }
 
-  const client = create({ url: config.api.baseURL })
+  const client = create({ url: config.api?.baseURL })
 
   // If CID is not included, we try to resolve IPNS
   if (!cid) {
@@ -69,7 +72,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
       result = await readDag(cid, client)
       break
     default:
-      throw Error(`Unknown type: ${type}`)
+      throw new AdapterInputError({ message: `Unknown type: ${type}` })
   }
 
   const response = {

@@ -1,10 +1,15 @@
-import { Requester, Validator, AdapterError } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteWithConfig, ExecuteFactory } from '@chainlink/types'
+import { Requester, Validator, AdapterInputError, InputParameters } from '@chainlink/ea-bootstrap'
+import { Config, ExecuteWithConfig, ExecuteFactory } from '@chainlink/ea-bootstrap'
 import { makeConfig, DEFAULT_SPORT } from './config'
 import { MMA, NFL, NCAA_FB, NBA, MLB } from './sport'
 
-const inputParams = {
-  sport: true,
+export type TInputParameters = { sport: string }
+export const inputParams: InputParameters<TInputParameters> = {
+  sport: {
+    required: true,
+    type: 'string',
+    description: 'The sport to use',
+  },
 }
 
 export const execute: ExecuteWithConfig<Config> = async (request, context, config) => {
@@ -32,7 +37,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, context, confi
       return await MLB.execute(request, context, config)
     }
     default: {
-      throw new AdapterError({
+      throw new AdapterInputError({
         jobRunID,
         message: `Sport ${sport} not supported.`,
         statusCode: 400,
@@ -41,6 +46,6 @@ export const execute: ExecuteWithConfig<Config> = async (request, context, confi
   }
 }
 
-export const makeExecute: ExecuteFactory<Config> = (config) => {
+export const makeExecute: ExecuteFactory<Config, TInputParameters> = (config) => {
   return async (request, context) => execute(request, context, config || makeConfig())
 }

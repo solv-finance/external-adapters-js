@@ -1,6 +1,6 @@
 import { balance } from '@chainlink/ea-factories'
-import { Requester } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteFactory } from '@chainlink/types'
+import { AdapterInputError, Requester, util } from '@chainlink/ea-bootstrap'
+import type { Config, ExecuteFactory, AdapterData, InputParameters } from '@chainlink/ea-bootstrap'
 import {
   isCoinType,
   isChainType,
@@ -14,7 +14,8 @@ export const supportedEndpoints = ['balance']
 export const description =
   'https://developers.cryptoapis.io/technical-documentation/blockchain-data/unified-endpoints/get-address-details'
 
-export const inputParameters = balance.inputParameters
+export type TInputParameters = AdapterData
+export const inputParameters: InputParameters<TInputParameters> = balance.inputParameters
 
 interface ResponseSchema {
   apiVersion: string
@@ -43,12 +44,18 @@ interface ResponseSchema {
 const getBalanceURI = (address: string, chain: string, coin: string) => {
   if (chain === 'testnet')
     chain = Requester.toVendorName(coin, TESTNET_BLOCKCHAINS_BY_PLATFORM) || chain
-  return `/v2/blockchain-data/${coin}/${chain}/addresses/${address}`
+  return util.buildUrlPath('/v2/blockchain-data/:coin/:chain/addresses/:address', {
+    coin,
+    chain,
+    address,
+  })
 }
 
 const getBalance: balance.GetBalance = async (account, config) => {
   if (!account.coin) {
-    throw new Error(`Account ${account.address} is missing blockchain parameter`)
+    throw new AdapterInputError({
+      message: `Account ${account.address} is missing blockchain parameter`,
+    })
   }
   const coin = BLOCKCHAIN_NAME_BY_TICKER[account.coin.toLowerCase() as BlockchainTickers]
   const options = {

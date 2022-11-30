@@ -1,12 +1,13 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, Config, InputParameters } from '@chainlink/types'
+import { Requester, util, Validator } from '@chainlink/ea-bootstrap'
+import type { ExecuteWithConfig, Config, InputParameters } from '@chainlink/ea-bootstrap'
 
 export const supportedEndpoints = ['price', 'stock']
 
 export const description =
   '**NOTE: the `price` endpoint is temporarily still supported, however, is being deprecated. Please use the `stock` endpoint instead.**'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     required: true,
     aliases: ['asset', 'from', 'symbol'],
@@ -44,10 +45,10 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   if (commonKeys[symbol]) {
     symbol = commonKeys[symbol]
   }
-  const url = `/api/real-time/${symbol}`
+  const url = util.buildUrlPath('/api/real-time/:symbol', { symbol })
 
   const params = {
-    ...config.api.params,
+    ...config.api?.params,
     fmt: 'json',
   }
 

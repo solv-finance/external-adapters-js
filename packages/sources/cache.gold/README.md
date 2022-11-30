@@ -1,41 +1,68 @@
 # Chainlink External Adapter for Cache.gold
 
-### Input Parameters
+![1.3.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/cache.gold/package.json)
 
-| Required? |   Name   |     Description     |          Options          | Defaults to |
-| :-------: | :------: | :-----------------: | :-----------------------: | :---------: |
-|           | endpoint | The endpoint to use | [lockedGold](#lockedGold) | lockedGold  |
+Base URL https://contract.cache.gold/api
+
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
+
+## Environment Variables
+
+| Required? |     Name     | Description |  Type  | Options |              Default              |
+| :-------: | :----------: | :---------: | :----: | :-----: | :-------------------------------: |
+|           | API_ENDPOINT |             | string |         | `https://contract.cache.gold/api` |
 
 ---
 
-## LokedGold Endpoint
+## Input Parameters
 
-Query the total gold grams locked in [cache.gold](https://contract.cache.gold/api/lockedGold)
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
+
+| Required? |   Name   |     Description     |  Type  |              Options               |   Default    |
+| :-------: | :------: | :-----------------: | :----: | :--------------------------------: | :----------: |
+|           | endpoint | The endpoint to use | string | [lockedGold](#lockedgold-endpoint) | `lockedGold` |
+
+## LockedGold Endpoint
+
+Query the total gold grams locked in [cache.gold](https://contract.cache.gold/api/lockedGold).
+
+`lockedGold` is the only supported name for this endpoint.
 
 ### Input Params
 
-| Required? | Name |                 Description                  | Options | Defaults to |
-| :-------: | :--: | :------------------------------------------: | :-----: | :---------: |
-|  ⛔ None  | None | no parameters are needed to make the request |         |             |
+There are no input parameters for this endpoint.
 
-### Sample Input
+### Example
+
+Request:
 
 ```json
 {
   "id": "1",
-  "data": {}
+  "data": {
+    "endpoint": "lockedGold"
+  },
+  "debug": {
+    "cacheKey": "aZoya+gFve1ms9ObNR40aMrNGvE="
+  }
 }
 ```
 
-### Sample Output
+Response:
 
 ```json
 {
   "jobRunID": "1",
-  "result": 62293.77,
-  "statusCode": 200,
   "data": {
-    "result": 62293.77
-  }
+    "grams_locked": "91571.93000000",
+    "result": 91571.93
+  },
+  "result": 91571.93,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

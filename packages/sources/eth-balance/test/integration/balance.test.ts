@@ -1,44 +1,24 @@
-import { AdapterRequest } from '@chainlink/types'
-import request, { SuperTest, Test } from 'supertest'
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import * as process from 'process'
 import { server as startServer } from '../../src'
-import { mockETHBalanceResponseSuccess } from './fixtures'
-import * as nock from 'nock'
-import * as http from 'http'
-import { AddressInfo } from 'net'
-
-beforeAll(() => {
-  process.env.CACHE_ENABLED = 'false'
-  process.env.ETHEREUM_RPC_URL = process.env.ETHEREUM_RPC_URL || 'http://localhost:8545'
-  if (process.env.RECORD) {
-    nock.recorder.rec()
-  }
-})
-
-afterAll(() => {
-  if (process.env.RECORD) {
-    nock.recorder.play()
-  }
-
-  nock.restore()
-  nock.cleanAll()
-  nock.enableNetConnect()
-})
+import { mockETHBalanceResponseSuccess, mockETHBalanceAtBlockResponseSuccess } from './fixtures'
+import { setupExternalAdapterTest } from '@chainlink/ea-test-helpers'
+import type { SuiteContext } from '@chainlink/ea-test-helpers'
+import { SuperTest, Test } from 'supertest'
 
 describe('execute', () => {
   const id = '1'
-  let server: http.Server
-  let req: SuperTest<Test>
+  const context: SuiteContext = {
+    req: null,
+    server: startServer,
+  }
 
-  beforeAll(async () => {
-    server = await startServer()
-    req = request(`localhost:${(server.address() as AddressInfo).port}`)
-    process.env.CACHE_ENABLED = 'false'
-  })
+  const envVariables = {
+    CACHE_ENABLED: 'false',
+    ETHEREUM_RPC_URL: process.env.ETHEREUM_RPC_URL || 'http://localhost:8545',
+  }
 
-  afterAll((done) => {
-    server.close(done)
-  })
+  setupExternalAdapterTest(envVariables, context)
 
   describe('with single address', () => {
     const data: AdapterRequest = {
@@ -51,7 +31,7 @@ describe('execute', () => {
     it('should return success', async () => {
       mockETHBalanceResponseSuccess()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')
@@ -76,7 +56,30 @@ describe('execute', () => {
     it('should return success', async () => {
       mockETHBalanceResponseSuccess()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
+        .post('/')
+        .send(data)
+        .set('Accept', '*/*')
+        .set('Content-Type', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200)
+      expect(response.body).toMatchSnapshot()
+    })
+  })
+
+  describe('with explicit minConfirmations', () => {
+    const data: AdapterRequest = {
+      id,
+      data: {
+        result: [{ address: '0x6a1544F72A2A275715e8d5924e6D8A017F0e41ed' }],
+        minConfirmations: 20,
+      },
+    }
+
+    it('should return success', async () => {
+      mockETHBalanceAtBlockResponseSuccess()
+
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')

@@ -1,35 +1,20 @@
-import { AdapterRequest } from '@chainlink/types'
-import request, { SuperTest, Test } from 'supertest'
-import * as process from 'process'
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import { server as startServer } from '../../src'
-import * as nock from 'nock'
-import * as http from 'http'
 import { mockResponseSuccess } from './fixtures'
-import { AddressInfo } from 'net'
+import { setupExternalAdapterTest } from '@chainlink/ea-test-helpers'
+import type { SuiteContext } from '@chainlink/ea-test-helpers'
+import { SuperTest, Test } from 'supertest'
 
 describe('execute', () => {
   const id = '1'
-  let server: http.Server
-  let req: SuperTest<Test>
+  const context: SuiteContext = {
+    req: null,
+    server: startServer,
+  }
 
-  beforeAll(async () => {
-    if (process.env.RECORD) {
-      nock.recorder.rec()
-    }
-    server = await startServer()
-    req = request(`localhost:${(server.address() as AddressInfo).port}`)
-  })
+  const envVariables = {}
 
-  afterAll((done) => {
-    if (process.env.RECORD) {
-      nock.recorder.play()
-    }
-
-    nock.restore()
-    nock.cleanAll()
-    nock.enableNetConnect()
-    server.close(done)
-  })
+  setupExternalAdapterTest(envVariables, context)
 
   describe('crypto rate api', () => {
     const data: AdapterRequest = {
@@ -43,7 +28,7 @@ describe('execute', () => {
     it('should return success', async () => {
       mockResponseSuccess()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')

@@ -1,6 +1,12 @@
 import { ethers, utils } from 'ethers'
-import { Logger, Requester, Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  Logger,
+  Requester,
+  Validator,
+  AdapterDataProviderError,
+  util,
+} from '@chainlink/ea-bootstrap'
+import { ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { Config } from '../config'
 
 export const supportedEndpoints = ['tokens']
@@ -51,9 +57,10 @@ const ERC20ABI_bytes32 = [
 
 const getOnChainErc20Token = async (
   rpcUrl: string,
+  chainId: string | number | undefined,
   address: string,
 ): Promise<{ symbol: string; decimals: number }> => {
-  const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl, chainId)
   const _symbol = (abi: ethers.ContractInterface) =>
     new ethers.Contract(address, abi, provider).symbol()
   const decimals = await new ethers.Contract(address, ERC20ABI, provider).decimals()
@@ -82,10 +89,14 @@ export const getToken = async (
   if (!cachedDirectory) {
     cachedDirectory = await getDirectory(network)
   }
-  return cachedDirectory[address] || (await getOnChainErc20Token(rpcUrl, address))
+  return cachedDirectory[address] || (await getOnChainErc20Token(rpcUrl, network, address))
 }
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = {
+  address: string
+}
+
+export const inputParameters: InputParameters<TInputParameters> = {
   address: {
     required: true,
   },
@@ -94,17 +105,27 @@ export const inputParameters: InputParameters = {
 export const execute: ExecuteWithConfig<Config> = async (input, _, config) => {
   const validator = new Validator(input, inputParameters)
 
-  const jobRunID = validator.validated.jobRunID
+  const jobRunID = validator.validated.id
   const address = validator.validated.data.address
 
-  if (!cachedDirectory) {
-    cachedDirectory = await getDirectory(config.network)
-  }
-  const token = cachedDirectory[address] || (await getOnChainErc20Token(config.rpcUrl, address))
+  try {
+    if (!cachedDirectory) {
+      cachedDirectory = await getDirectory(config.network)
+    }
+    const token =
+      cachedDirectory[address] ||
+      (await getOnChainErc20Token(config.rpcUrl, config.chainId, address))
 
-  const response = {
-    data: token,
-  }
+    const response = {
+      data: token,
+    }
 
-  return Requester.success(jobRunID, response, true)
+    return Requester.success(jobRunID, response, true)
+  } catch (e: any) {
+    throw new AdapterDataProviderError({
+      network: config.network,
+      message: util.mapRPCErrorMessage(e?.code, e?.message),
+      cause: e,
+    })
+  }
 }

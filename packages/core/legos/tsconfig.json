@@ -38,6 +38,15 @@
       "path": "../../sources/ap-election"
     },
     {
+      "path": "../../sources/armanino"
+    },
+    {
+      "path": "../../sources/bank-frick"
+    },
+    {
+      "path": "../../sources/bank-frick-test"
+    },
+    {
       "path": "../../sources/bea"
     },
     {
@@ -62,7 +71,13 @@
       "path": "../../sources/blockcypher"
     },
     {
+      "path": "../../sources/blocksize-capital"
+    },
+    {
       "path": "../../sources/blockstream"
+    },
+    {
+      "path": "../../sources/bob"
     },
     {
       "path": "../../sources/bravenewcoin"
@@ -74,7 +89,16 @@
       "path": "../../sources/cache.gold"
     },
     {
+      "path": "../../sources/ccip-read"
+    },
+    {
+      "path": "../../sources/celsius-address-list"
+    },
+    {
       "path": "../../sources/cfbenchmarks"
+    },
+    {
+      "path": "../../sources/cfbenchmarks-test"
     },
     {
       "path": "../../sources/chain-reserve-wallet"
@@ -92,6 +116,9 @@
       "path": "../../sources/coingecko"
     },
     {
+      "path": "../../sources/coingecko-test"
+    },
+    {
       "path": "../../sources/coinlore"
     },
     {
@@ -99,6 +126,9 @@
     },
     {
       "path": "../../sources/coinmetrics"
+    },
+    {
+      "path": "../../sources/coinmetrics-test"
     },
     {
       "path": "../../sources/coinpaprika"
@@ -110,6 +140,9 @@
       "path": "../../sources/covid-tracker"
     },
     {
+      "path": "../../sources/cryptex"
+    },
+    {
       "path": "../../sources/cryptoapis"
     },
     {
@@ -117,6 +150,9 @@
     },
     {
       "path": "../../sources/cryptocompare"
+    },
+    {
+      "path": "../../sources/cryptocompare-test"
     },
     {
       "path": "../../sources/cryptoid"
@@ -137,9 +173,6 @@
       "path": "../../sources/dns-query"
     },
     {
-      "path": "../../sources/durin"
-    },
-    {
       "path": "../../sources/dwolla"
     },
     {
@@ -149,6 +182,15 @@
       "path": "../../sources/dxfeed-secondary"
     },
     {
+      "path": "../../sources/elwood"
+    },
+    {
+      "path": "../../sources/elwood-test"
+    },
+    {
+      "path": "../../sources/ens"
+    },
+    {
       "path": "../../sources/enzyme"
     },
     {
@@ -156,6 +198,9 @@
     },
     {
       "path": "../../sources/eth-balance"
+    },
+    {
+      "path": "../../sources/eth-beacon"
     },
     {
       "path": "../../sources/etherchain"
@@ -188,7 +233,19 @@
       "path": "../../sources/flightaware"
     },
     {
+      "path": "../../sources/fluent-finance"
+    },
+    {
       "path": "../../sources/fmpcloud"
+    },
+    {
+      "path": "../../sources/galaxis"
+    },
+    {
+      "path": "../../sources/galaxy"
+    },
+    {
+      "path": "../../sources/galaxy-test"
     },
     {
       "path": "../../sources/gemini"
@@ -207,6 +264,12 @@
     },
     {
       "path": "../../sources/graphql"
+    },
+    {
+      "path": "../../sources/gsr"
+    },
+    {
+      "path": "../../sources/gsr-test"
     },
     {
       "path": "../../sources/iex-cloud"
@@ -231,6 +294,9 @@
     },
     {
       "path": "../../sources/lcx"
+    },
+    {
+      "path": "../../sources/lido"
     },
     {
       "path": "../../sources/linkpool"
@@ -258,6 +324,9 @@
     },
     {
       "path": "../../sources/ncfx"
+    },
+    {
+      "path": "../../sources/ncfx-test"
     },
     {
       "path": "../../sources/nikkei"
@@ -290,7 +359,10 @@
       "path": "../../sources/polygon"
     },
     {
-      "path": "../../sources/reduce"
+      "path": "../../sources/por-address-list"
+    },
+    {
+      "path": "../../non-deployable/reduce"
     },
     {
       "path": "../../sources/renvm-address-set"
@@ -314,7 +386,16 @@
       "path": "../../sources/sportsdataio"
     },
     {
+      "path": "../../sources/stader-address-list"
+    },
+    {
+      "path": "../../sources/stader-labs"
+    },
+    {
       "path": "../../sources/stasis"
+    },
+    {
+      "path": "../../sources/swell-address-list"
     },
     {
       "path": "../../sources/synthetix-debt-pool"

@@ -59,14 +59,34 @@ function copyFiles(type: string, n: string) {
     .exec(`tee packages/${type}s/${n}/package.json`)
     .to(`packages/${type}s/${n}/package.json`)
 
+  // clear the CHANGELOG
+  shell.echo(`# @chainlink/${n}-adapter\n`).to(`packages/${type}s/${n}/CHANGELOG.md`)
+
+  // set the new adapter version to 0.0.0
+  shell.sed(
+    '-i',
+    '"version": ".+?(?=",)',
+    '"version": "0.0.0',
+    `packages/${type}s/${n}/package.json`,
+  )
+
   // changing README to use the adapter name instead of example
   const nCap: string = n[0].toUpperCase() + n.slice(1)
   shell.sed('-i', 'Example', nCap, `packages/${type}s/${n}/README.md`)
 }
 
-function tsconfGenerate(packages: WorkspacePackage[], filepath: string, slice = 0) {
+function tsconfGenerate(
+  packages: WorkspacePackage[],
+  filepath: string,
+  slice = 0,
+  isTestConfig = false,
+) {
   return packages.map((w: WorkspacePackage) => {
-    return { path: path.relative(filepath, w.location).slice(slice) } //removes first '.'
+    return {
+      path: path
+        .relative(filepath, `${w.location}${isTestConfig ? '/tsconfig.test.json' : ''}`)
+        .slice(slice),
+    } //removes first '.'
   })
 }
 
@@ -75,7 +95,8 @@ async function generate(type: string) {
 
   // pull latest workspace data after files have been generated
   let currentWorkspace: WorkspacePackage[] = getWorkspacePackages(['scripts', 'core']) //using this alphabetizes everything
-  currentWorkspace = currentWorkspace.filter((w) => w.name !== '@chainlink/types') //filter out package
+  currentWorkspace = currentWorkspace.filter((w) => w.name !== '@chainlink/ea-bootstrap') //filter out package
+  currentWorkspace = currentWorkspace.filter((w) => w.name !== '@chainlink/readme-test-adapter') //filter out package
   const adapterList = currentWorkspace.filter((w) => w.type === `${type}s`)
 
   // add to packages/tsconfig.json
@@ -83,6 +104,14 @@ async function generate(type: string) {
   const tsconfig = JSON.parse(JSON.stringify(require(path.relative(__dirname, tsconfigPath))))
   tsconfig.references = tsconfGenerate(currentWorkspace, tsconfigPath, 1)
   writeData = { ...writeData, [tsconfigPath]: tsconfig }
+
+  // add to packages/tsconfig.test.json
+  const tsconfigTestPath = 'packages/tsconfig.test.json'
+  const tsconfigTest = JSON.parse(
+    JSON.stringify(require(path.relative(__dirname, tsconfigTestPath))),
+  )
+  tsconfigTest.references = tsconfGenerate(currentWorkspace, tsconfigTestPath, 1, true)
+  writeData = { ...writeData, [tsconfigTestPath]: tsconfigTest }
 
   // add to ea legos package for source adapters
   if (type === 'source') {
@@ -136,7 +165,7 @@ async function generate(type: string) {
   return writeData
 }
 
-export async function main() {
+export async function main(): Promise<void> {
   log(blue.bold('Running input checks'))
   const inputs: Inputs = checks()
 

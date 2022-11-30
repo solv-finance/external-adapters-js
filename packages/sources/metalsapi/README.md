@@ -1,33 +1,61 @@
 # Chainlink External Adapter for [MetalsAPI](https://metals-api.com/documentation#convertcurrency)
 
-### Environment Variables
+![1.7.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/metalsapi/package.json)
 
-| Required? |  Name   | Description | Options | Defaults to |
-| :-------: | :-----: | :---------: | :-----: | :---------: |
-|    ✅     | API_KEY |             |         |             |
+Base URL https://metals-api.com/api/
+
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
+
+## Environment Variables
+
+| Required? |     Name     | Description |  Type  | Options |            Default            |
+| :-------: | :----------: | :---------: | :----: | :-----: | :---------------------------: |
+|    ✅     |   API_KEY    |             | string |         |                               |
+|           | API_ENDPOINT |             | string |         | `https://metals-api.com/api/` |
 
 ---
 
-### Input Parameters
+## Input Parameters
 
-| Required? |   Name   |     Description     |                         Options                         | Defaults to |
-| :-------: | :------: | :-----------------: | :-----------------------------------------------------: | :---------: |
-|           | endpoint | The endpoint to use | [convert](#Convert-Endpoint) [latest](#Latest-Endpoint) |   latest    |
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
 
----
+| Required? |   Name   |     Description     |  Type  |                                       Options                                        | Default |
+| :-------: | :------: | :-----------------: | :----: | :----------------------------------------------------------------------------------: | :-----: |
+|           | endpoint | The endpoint to use | string | [convert](#convert-endpoint), [forex](#convert-endpoint), [latest](#latest-endpoint) | `forex` |
 
 ## Convert Endpoint
 
+Supported names for this endpoint are: `convert`, `forex`.
+
 ### Input Params
 
-| Required? |            Name            |                        Description                        |                                       Options                                        | Defaults to |
-| :-------: | :------------------------: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------: | :---------: |
-|    ✅     | `base`, `from`, or `coin`  |            The symbol of the currency to query            |                                                                                      |             |
-|    ✅     | `quote`, `to`, or `market` |         The symbol of the currency to convert to          |                                                                                      |             |
-|    🟡     |          `amount`          |             The amount fo the `base` currency             |                                                                                      |      1      |
-|    🟡     |        `overrides`         | If base provided is found in overrides, that will be used | [Format](../../core/bootstrap/src/lib/external-adapter/overrides/presetSymbols.json) |             |
+| Required? |  Name  |    Aliases     |               Description                |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :----: | :------------: | :--------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     |  base  | `coin`, `from` |   The symbol of the currency to query    |        |         |         |            |                |
+|    ✅     | quote  | `market`, `to` | The symbol of the currency to convert to |        |         |         |            |                |
+|           | amount |                |    The amount of the `base` currency     | number |         |   `1`   |            |                |
 
-## Output
+### Example
+
+Request:
+
+```json
+{
+  "id": "1",
+  "data": {
+    "base": "XAU",
+    "quote": "USD",
+    "amount": 1,
+    "endpoint": "convert"
+  },
+  "debug": {
+    "cacheKey": "/VC1KUtn1FaFM+Mo8m3yBVfFvxc="
+  },
+  "rateLimitMaxAge": 58823529
+}
+```
+
+Response:
 
 ```json
 {
@@ -37,97 +65,226 @@
     "query": {
       "from": "XAU",
       "to": "USD",
-      "amount": "1"
+      "amount": 1
     },
     "info": {
-      "timestamp": 1595252400,
-      "rate": 1813.1957606105088
+      "timestamp": 1637949420,
+      "rate": 1785.0181286441143
     },
     "historical": false,
-    "date": "2020-07-20",
-    "result": 1813.1957606105088,
+    "date": "2021-11-26",
+    "result": 1785.0181286441143,
     "unit": "per ounce"
   },
-  "result": 1813.1957606105088,
-  "statusCode": 200
+  "result": 1785.0181286441143,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
 
+---
+
 ## Latest Endpoint
 
-#### Returns a batched price comparison from one currency to a list of other currencies.
+Returns a batched price comparison from one currency to a list of other currencies.
+
+`latest` is the only supported name for this endpoint.
 
 ### Input Params
 
-| Required? |            Name            |                        Description                        |                                       Options                                        | Defaults to |
-| :-------: | :------------------------: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------: | :---------: |
-|    ✅     | `base`, `from`, or `coin`  |            The symbol of the currency to query            |                                                                                      |             |
-|    ✅     | `quote`, `to`, or `market` |        The symbol of the currencies to convert to         |                                                                                      |      1      |
-|    🟡     |        `overrides`         | If base provided is found in overrides, that will be used | [Format](../../core/bootstrap/src/lib/external-adapter/overrides/presetSymbols.json) |             |
+| Required? | Name  |    Aliases     |               Description                |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :---: | :------------: | :--------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | base  | `coin`, `from` |   The symbol of the currency to query    | string |         |         |            |                |
+|    ✅     | quote | `market`, `to` | The symbol of the currency to convert to |        |         |         |            |                |
 
-## Input
+### Example
+
+Request:
 
 ```json
 {
   "id": "1",
   "data": {
-    "endpoint": "latest",
-    "base": "USD",
-    "quote": ["EUR", "AUD"]
-  }
+    "base": "XAU",
+    "quote": "USD",
+    "endpoint": "latest"
+  },
+  "debug": {
+    "cacheKey": "4LsxrIT483BCS93HKnZ32ylFSOU=",
+    "batchCacheKey": "J6x3JpCcFEUOtH+1f2g+Ku0h0S0=",
+    "batchChildrenCacheKeys": [
+      [
+        "4LsxrIT483BCS93HKnZ32ylFSOU=",
+        {
+          "id": "1",
+          "data": {
+            "base": "XAU",
+            "quote": "USD",
+            "endpoint": "latest"
+          }
+        }
+      ]
+    ]
+  },
+  "rateLimitMaxAge": 117647058
 }
 ```
 
-## Output
+Response:
 
 ```json
 {
   "jobRunID": "1",
-  "debug": {
-    "staleness": 0,
-    "performance": 0.965477773,
-    "providerCost": 1
-  },
-  "statusCode": 200,
   "data": {
     "success": true,
-    "timestamp": 1627564680,
-    "date": "2021-07-29",
-    "base": "USD",
-    // Shortened for the purposes of this example
+    "timestamp": 1641990900,
+    "date": "2022-01-12",
+    "base": "XAU",
     "rates": {
-      "ADA": 0.7823791647114,
-      "AED": 3.67475189455,
-      "AFN": 79.78921717425,
-      "ALL": 102.60027023532,
-      "ALU": 12.412282878412,
-      "...": "..."
+      "USD": 1817.0552439305814
+    },
+    "unit": "per ounce",
+    "result": 1817.0552439305814
+  },
+  "result": 1817.0552439305814,
+  "statusCode": 200,
+  "debug": {
+    "batchablePropertyPath": [
+      {
+        "name": "quote"
+      }
+    ]
+  },
+  "providerStatusCode": 200
+}
+```
+
+<details>
+<summary>Additional Examples</summary>
+
+Request:
+
+```json
+{
+  "id": "1",
+  "data": {
+    "base": "BTC",
+    "quote": ["USD", "XAU"],
+    "endpoint": "latest"
+  },
+  "debug": {
+    "cacheKey": "Io9CE5GgK3Zu72UltbQi09+PByY=",
+    "batchCacheKey": "2E1RbkLbQOXUVtGI1E2+n/etEO8=",
+    "batchChildrenCacheKeys": [
+      [
+        "2ZgJBx2Rs86dhkQN/BET4ojSkTU=",
+        {
+          "id": "1",
+          "data": {
+            "base": "BTC",
+            "quote": "USD",
+            "endpoint": "latest"
+          }
+        }
+      ]
+    ]
+  },
+  "rateLimitMaxAge": 176470588
+}
+```
+
+Response:
+
+```json
+{
+  "jobRunID": "1",
+  "data": {
+    "success": true,
+    "timestamp": 1641990180,
+    "date": "2022-01-12",
+    "base": "BTC",
+    "rates": {
+      "XAU": 0.04228229144046888,
+      "USD": 42968.36778447169
     },
     "unit": "per ounce",
     "results": [
       [
+        "2ZgJBx2Rs86dhkQN/BET4ojSkTU=",
         {
           "id": "1",
           "data": {
-            "base": "USD",
-            "quote": "EUR"
+            "base": "BTC",
+            "quote": "USD",
+            "endpoint": "latest"
           },
-          "rateLimitMaxAge": 960
+          "debug": {
+            "cacheKey": "Io9CE5GgK3Zu72UltbQi09+PByY=",
+            "batchCacheKey": "2E1RbkLbQOXUVtGI1E2+n/etEO8=",
+            "batchChildrenCacheKeys": [
+              [
+                "2ZgJBx2Rs86dhkQN/BET4ojSkTU=",
+                {
+                  "id": "1",
+                  "data": {
+                    "base": "BTC",
+                    "quote": "USD",
+                    "endpoint": "latest"
+                  }
+                }
+              ]
+            ]
+          },
+          "rateLimitMaxAge": 176470588
         },
-        0.841928
+        42968.36778447169
       ],
       [
+        "jn7Ay27+0XZwS3+kIquAQibbEtg=",
         {
           "id": "1",
           "data": {
-            "base": "USD",
-            "quote": "AUD"
+            "base": "BTC",
+            "quote": "XAU",
+            "endpoint": "latest"
           },
-          "rateLimitMaxAge": 960
+          "debug": {
+            "cacheKey": "Io9CE5GgK3Zu72UltbQi09+PByY=",
+            "batchCacheKey": "2E1RbkLbQOXUVtGI1E2+n/etEO8=",
+            "batchChildrenCacheKeys": [
+              [
+                "2ZgJBx2Rs86dhkQN/BET4ojSkTU=",
+                {
+                  "id": "1",
+                  "data": {
+                    "base": "BTC",
+                    "quote": "USD",
+                    "endpoint": "latest"
+                  }
+                }
+              ]
+            ]
+          },
+          "rateLimitMaxAge": 176470588
         },
-        1.3547253478
+        0.04228229144046888
       ]
     ]
-  }
+  },
+  "statusCode": 200,
+  "debug": {
+    "batchablePropertyPath": [
+      {
+        "name": "quote"
+      }
+    ]
+  },
+  "providerStatusCode": 200
 }
 ```
+
+</details>
+
+---
+
+MIT License

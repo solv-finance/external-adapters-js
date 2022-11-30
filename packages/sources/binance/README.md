@@ -1,49 +1,78 @@
 # Chainlink External Adapter for Binance
 
+![1.4.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/binance/package.json)
+
 Adapter using the public Binance market API for both HTTP(s) and WS.
 
-### Input Parameters
+Base URL https://api.binance.com
 
-| Required? |   Name   |     Description     |          Options           | Defaults to |
-| :-------: | :------: | :-----------------: | :------------------------: | :---------: |
-|           | endpoint | The endpoint to use | [crypto](#Crypto-Endpoint) |   ticker    |
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
+
+## Environment Variables
+
+| Required? |      Name       | Description |  Type  | Options |              Default               |
+| :-------: | :-------------: | :---------: | :----: | :-----: | :--------------------------------: |
+|           |  API_ENDPOINT   |             | string |         |     `https://api.binance.com`      |
+|           | WS_API_ENDPOINT |             | string |         | `wss://stream.binance.com:9443/ws` |
 
 ---
 
+## Input Parameters
+
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
+
+| Required? |   Name   |     Description     |  Type  |                        Options                         | Default  |
+| :-------: | :------: | :-----------------: | :----: | :----------------------------------------------------: | :------: |
+|           | endpoint | The endpoint to use | string | [crypto](#crypto-endpoint), [ticker](#crypto-endpoint) | `crypto` |
+
 ## Crypto Endpoint
 
-##### NOTE: the `price` endpoint is temporarily still supported, however, is being deprecated. Please use the `crypto` endpoint instead.
+**Note: the `price` endpoint is temporarily still supported, however, is being deprecated. Please use the `crypto` endpoint instead.**
 
-An example endpoint description
+Supported names for this endpoint are: `crypto`, `ticker`.
 
 ### Input Params
 
-| Required? |            Name            |               Description                | Options | Defaults to |
-| :-------: | :------------------------: | :--------------------------------------: | :-----: | :---------: |
-|    ✅     | `base`, `from`, or `coin`  |   The symbol of the currency to query    |         |             |
-|    ✅     | `quote`, `to`, or `market` | The symbol of the currency to convert to |         |             |
+| Required? | Name  |    Aliases     |               Description                |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :---: | :------------: | :--------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | base  | `coin`, `from` |   The symbol of the currency to query    | string |         |         |            |                |
+|    ✅     | quote | `market`, `to` | The symbol of the currency to convert to | string |         |         |            |                |
 
-### Sample Input
+### Example
+
+Request:
 
 ```json
 {
   "id": "1",
   "data": {
     "base": "ETH",
-    "quote": "USDT"
-  }
+    "quote": "BTC",
+    "endpoint": "crypto"
+  },
+  "debug": {
+    "cacheKey": "Eao0YPhZDa3+RmRxiwOG5dAIIt0="
+  },
+  "rateLimitMaxAge": 55
 }
 ```
 
-### Sample Output
+Response:
 
 ```json
 {
-  "jobRunID": "278c97ffadb54a5bbb93cfec5f7b5503",
-  "result": 2429.02,
+  "jobRunID": "1",
   "data": {
-    "result": 2429.02
+    "symbol": "ETHBTC",
+    "price": "0.07077300",
+    "result": 0.070773
   },
-  "statusCode": 200
+  "result": 0.070773,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

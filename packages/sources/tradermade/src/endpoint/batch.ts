@@ -1,12 +1,14 @@
-import { Validator, Requester, util } from '@chainlink/ea-bootstrap'
-import {
+import { Validator, Requester, util, CacheKey } from '@chainlink/ea-bootstrap'
+import type {
   ExecuteWithConfig,
   Config,
   AdapterRequest,
   AxiosResponse,
   InputParameters,
-} from '@chainlink/types'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
 import { NAME } from '../config'
+import overrides from '../config/symbols.json'
 
 /**
  * This endpoint is similar to live but is supposed to only be used to fetch forex data.  This is why quote is a required parameter.
@@ -17,7 +19,8 @@ export const supportedEndpoints = []
 // NOTE: unused pending tradermade service agreement
 export const batchablePropertyPath = [{ name: 'base' }, { name: 'quote' }]
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string | string[]; quote: string | string[] }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'symbol'],
     required: true,
@@ -51,19 +54,26 @@ const handleBatchedRequest = (
   response: AxiosResponse<ResponseSchema>,
   resultPath: string,
 ) => {
-  const payload: [AdapterRequest, number][] = []
+  const payload: AdapterBatchResponse = []
+
   for (const pair of response.data.quotes) {
     const symbol = pair.base_currency
     const to = pair.quote_currency
 
+    const individualRequest = {
+      ...request,
+      data: { ...request.data, from: symbol.toUpperCase(), to: to.toUpperCase() },
+    }
+
+    const result = Requester.validateResultNumber(pair, [resultPath])
+
     payload.push([
-      {
-        ...request,
-        data: { ...request.data, from: symbol.toUpperCase(), to: to.toUpperCase() },
-      },
-      Requester.validateResultNumber(pair, [resultPath]),
+      CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+      individualRequest,
+      result,
     ])
   }
+
   return Requester.success(
     jobRunID,
     Requester.withResult(response, undefined, payload),
@@ -73,11 +83,11 @@ const handleBatchedRequest = (
 }
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { overrides })
   Requester.logConfig(config)
 
   const jobRunID = validator.validated.id
-  const symbol = validator.overrideSymbol(NAME)
+  const symbol = validator.overrideSymbol(NAME, validator.validated.data.base)
   const to = validator.validated.data.quote || ''
   const pairArray = []
 
@@ -89,7 +99,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 
   const currency = pairArray.toString()
   const params = {
-    ...config.api.params,
+    ...config.api?.params,
     currency,
   }
 
@@ -102,7 +112,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   return Requester.success(
     jobRunID,
     Requester.withResult(response, result),
-    config.api.verbose,
+    config.verbose,
     batchablePropertyPath,
   )
 }

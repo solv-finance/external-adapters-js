@@ -1,16 +1,32 @@
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import nock from 'nock'
 
-export function mockCoinpaprikaAdapterResponseSuccess() {
-  nock('http://localhost:8081')
-    .post('/', { id: '1', data: { base: 'SUSHI', quote: 'USD', endpoint: 'crypto' } })
+export function mockCoinpaprikaAdapterResponseSuccess(): nock.Scope {
+  return nock('http://localhost:8081')
+    .post('/', { id: '1', data: { base: ['SUSHI'], quote: 'USD', endpoint: 'crypto' } })
     .reply(
       200,
       {
         jobRunID: '1',
         providerStatusCode: 200,
-        result: 12.049759759496,
         statusCode: 200,
-        data: { result: 12.049759759496 },
+        data: {
+          results: [
+            [
+              {
+                id: '1',
+                data: {
+                  endpoint: 'crypto',
+                  resultPath: 'price',
+                  base: 'SUSHI',
+                  quote: 'USD',
+                },
+                rateLimitMaxAge: 57603,
+              },
+              3.2489646804045,
+            ],
+          ],
+        },
       },
       [
         'X-Powered-By',
@@ -35,20 +51,24 @@ export function mockCoinpaprikaAdapterResponseSuccess() {
     )
 }
 
-export function mockEthereumResponseSuccess() {
-  nock('http://localhost:8545')
+export function mockEthereumResponseSuccess(): nock.Scope {
+  return nock('http://localhost:8545')
     .persist()
     .post('/', { method: 'eth_chainId', params: [], id: /^\d+$/, jsonrpc: '2.0' })
-    .reply(200, (_, request) => ({ jsonrpc: '2.0', id: request['id'], result: '0x1' }), [
-      'Content-Type',
-      'application/json',
-      'Connection',
-      'close',
-      'Vary',
-      'Accept-Encoding',
-      'Vary',
-      'Origin',
-    ])
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({ jsonrpc: '2.0', id: request['id'], result: '0x1' }),
+      [
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
     .post('/', {
       method: 'eth_call',
       params: [{ to: '0x8798249c2e607446efb7ad49ec89dd1865ff4272', data: '0x0a087903' }, 'latest'],

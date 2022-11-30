@@ -1,19 +1,24 @@
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import nock from 'nock'
 
-export function mockEthereumResponseSuccess() {
-  nock('http://localhost:8545')
+export function mockEthereumResponseSuccess(): nock.Scope {
+  return nock('http://localhost:8545')
     .persist()
     .post('/', { method: 'eth_chainId', params: [], id: /^\d+$/, jsonrpc: '2.0' })
-    .reply(200, (_, request) => ({ jsonrpc: '2.0', id: request['id'], result: '0x2a' }), [
-      'Content-Type',
-      'application/json',
-      'Connection',
-      'close',
-      'Vary',
-      'Accept-Encoding',
-      'Vary',
-      'Origin',
-    ])
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({ jsonrpc: '2.0', id: request['id'], result: '0x2a' }),
+      [
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
     .post('/', {
       method: 'eth_call',
       params: [
@@ -28,7 +33,7 @@ export function mockEthereumResponseSuccess() {
     })
     .reply(
       200,
-      (_, request) => ({
+      (_, request: AdapterRequest) => ({
         jsonrpc: '2.0',
         id: request['id'],
         result:
@@ -59,7 +64,7 @@ export function mockEthereumResponseSuccess() {
     })
     .reply(
       200,
-      (_, request) => ({
+      (_, request: AdapterRequest) => ({
         jsonrpc: '2.0',
         id: request['id'],
         result:
@@ -90,11 +95,41 @@ export function mockEthereumResponseSuccess() {
     })
     .reply(
       200,
-      (_, request) => ({
+      (_, request: AdapterRequest) => ({
         jsonrpc: '2.0',
         id: request['id'],
         result:
           '0x000000000000000000000000d7f19f0d395e8c7d5368d74a81b774e2b822df250000000000000000000000000000000000000000000000008ac7230489e80000',
+      }),
+      [
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
+    .post('/', {
+      method: 'eth_call',
+      params: [
+        {
+          to: '0x7c728cd0cfa92401e01a4849a01b57ee53f5b2b9',
+          data: '0xfaf6eeef00000000000000000000000027f23c710dd3d878fe9393d93465fed1302f2ebd000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+        },
+        'latest',
+      ],
+      id: /^\d+$/,
+      jsonrpc: '2.0',
+    })
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({
+        jsonrpc: '2.0',
+        id: request.id,
+        result: '0x0000000000000000000000000000000000000000000000000de0b6b3a7640000',
       }),
       [
         'Content-Type',

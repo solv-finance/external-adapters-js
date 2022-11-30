@@ -1,11 +1,23 @@
-import { Requester } from '@chainlink/ea-bootstrap'
-import { assertError } from '@chainlink/ea-test-helpers'
-import { AdapterRequest } from '@chainlink/types'
+import { AdapterError, Requester } from '@chainlink/ea-bootstrap'
+import { assertError, setEnvVariables } from '@chainlink/ea-test-helpers'
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import { makeExecute } from '../../src/adapter'
+import { TInputParameters } from '../../src/endpoint'
+
+let oldEnv: NodeJS.ProcessEnv
 
 describe('execute', () => {
   const jobID = '1'
   const execute = makeExecute()
+
+  beforeAll(() => {
+    oldEnv = JSON.parse(JSON.stringify(process.env))
+    process.env.API_KEY = 'fake-api-key'
+  })
+
+  afterAll(() => {
+    setEnvVariables(oldEnv)
+  })
 
   describe('validation error', () => {
     const requests = [
@@ -16,10 +28,13 @@ describe('execute', () => {
         testData: {
           id: jobID,
           data: {
+            date: '',
             statePostal: 'VA',
             level: 'state',
             officeID: 'A',
             raceType: 'D',
+            raceID: '',
+            resultsType: '',
           },
         },
       },
@@ -32,6 +47,7 @@ describe('execute', () => {
             level: 'state',
             officeID: 'A',
             raceType: 'D',
+            statePostal: '',
           },
         },
       },
@@ -64,9 +80,9 @@ describe('execute', () => {
     requests.forEach((req) => {
       it(`${req.name}`, async () => {
         try {
-          await execute(req.testData as AdapterRequest)
+          await execute(req.testData as AdapterRequest<TInputParameters>, {})
         } catch (error) {
-          const errorResp = Requester.errored(jobID, error)
+          const errorResp = Requester.errored(jobID, error as AdapterError)
           assertError({ expected: 400, actual: errorResp.statusCode }, errorResp, jobID)
         }
       })

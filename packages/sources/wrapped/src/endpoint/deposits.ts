@@ -1,10 +1,15 @@
-import { Requester, Validator, AdapterError } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteWithConfig, InputParameters, AxiosResponse } from '@chainlink/types'
+import { Requester, Validator, AdapterInputError } from '@chainlink/ea-bootstrap'
+import type {
+  Config,
+  ExecuteWithConfig,
+  InputParameters,
+  AxiosResponse,
+} from '@chainlink/ea-bootstrap'
 
 export const supportedEndpoints = ['deposits']
 
 export interface ResponseSchema {
-  [token: string]: Address[]
+  [token: string]: string[]
 }
 
 export interface Networks {
@@ -17,11 +22,10 @@ export type Address = {
   chainId: string
 }
 
-const customError = (data: unknown) => {
-  return typeof data !== 'object'
-}
+const customError = (data: unknown) => typeof data !== 'object'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { symbol: string; network: string; chainId: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   symbol: {
     description: 'The symbol of the currency to query (`BTC`, `ETH`, `LTC`, etc.).',
     type: 'string',
@@ -60,6 +64,10 @@ const networks: Networks = {
   cUSD: 'celo',
 }
 
+interface ResponseWithResult extends Partial<AxiosResponse> {
+  result: Record<string, string>[]
+}
+
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
   const validator = new Validator(request, inputParameters)
 
@@ -75,21 +83,26 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 
   if (!addresses) {
     const keys = Object.keys(response.data).join()
-    throw new AdapterError({
+    throw new AdapterInputError({
       jobRunID,
       message: `Input, at 'symbol' path, must be one of the following values: ${keys}`,
       statusCode: 400,
     })
   }
 
-  const result = addresses.map((address: Address) => ({
+  const addressResult: Address[] = addresses.map((address: string) => ({
     address,
     network,
     chainId,
   }))
 
-  return Requester.success(
-    jobRunID,
-    Requester.withResult(response, result as AxiosResponse<Address[]>),
-  )
+  const result: ResponseWithResult = {
+    ...response,
+    result: addressResult,
+    data: {
+      result: addressResult,
+    },
+  }
+
+  return Requester.success(jobRunID, result)
 }

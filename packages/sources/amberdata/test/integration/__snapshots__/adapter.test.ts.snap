@@ -49,14 +49,26 @@ Object {
 }
 `;
 
-exports[`amberdata when making a request to marketcap endpoint should reply with success 1`] = `
+exports[`amberdata when making a request to crypto endpoint with an override from config/overrides.json should reply with success 1`] = `
 Object {
   "data": Object {
-    "result": 490182085144.57404,
+    "result": 0.0000586300395535625,
   },
   "jobRunID": "1",
   "providerStatusCode": 200,
-  "result": 490182085144.57404,
+  "result": 0.0000586300395535625,
+  "statusCode": 200,
+}
+`;
+
+exports[`amberdata when making a request to marketcap endpoint should reply with success 1`] = `
+Object {
+  "data": Object {
+    "result": 391118025366,
+  },
+  "jobRunID": "1",
+  "providerStatusCode": 200,
+  "result": 391118025366,
   "statusCode": 200,
 }
 `;

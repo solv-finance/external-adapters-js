@@ -1,16 +1,16 @@
 import { assertError } from '@chainlink/ea-test-helpers'
-import { Requester } from '@chainlink/ea-bootstrap'
+import { AdapterError, AdapterRequest, Requester } from '@chainlink/ea-bootstrap'
 import * as circuitbreakerAllocationAdapter from '../../src/index'
 import { dataProviderConfig, mockDataProviderResponses } from './fixtures'
 import nock from 'nock'
+import { TInputParameters } from '../../src/endpoint'
 
 let oldEnv: NodeJS.ProcessEnv
 
 describe('execute', () => {
-  let execute: Execute
+  const execute = circuitbreakerAllocationAdapter.makeExecute()
 
   beforeAll(async () => {
-    execute = await circuitbreakerAllocationAdapter.makeExecute()
     if (process.env.RECORD) {
       nock.recorder.rec()
     }
@@ -78,7 +78,7 @@ describe('execute', () => {
 
     request.forEach((req) => {
       it(`${req.name}`, async () => {
-        const resp = await execute(req.input)
+        const resp = await execute(req.input, {})
         expect(resp).toMatchSnapshot()
       })
     })
@@ -121,16 +121,16 @@ describe('execute', () => {
       },
     ]
 
-    const expectedProviderStatusCodes = [0, 500]
+    const expectedProviderStatusCodes = 0
 
-    request.forEach((req, i) => {
+    request.forEach((req) => {
       it(`${req.name}`, async () => {
         try {
           await execute(req.input, {})
         } catch (error) {
-          const errorResp = Requester.errored(jobID, error)
+          const errorResp = Requester.errored(jobID, error as AdapterError)
           assertError(
-            { expected: expectedProviderStatusCodes[i], actual: errorResp.providerStatusCode },
+            { expected: expectedProviderStatusCodes, actual: errorResp.providerStatusCode },
             errorResp,
             jobID,
           )
@@ -204,17 +204,17 @@ describe('execute', () => {
           },
         },
       },
-      { name: 'allocations not supplied', testData: { id: jobID, data: {} } },
-      { name: 'base not supplied', testData: { id: jobID, data: { quote: 'ARS' } } },
-      { name: 'quote not supplied', testData: { id: jobID, data: { base: 'BTC' } } },
+      { name: 'allocations not supplied', input: { id: jobID, data: {} } },
+      { name: 'base not supplied', input: { id: jobID, data: { quote: 'ARS' } } },
+      { name: 'quote not supplied', input: { id: jobID, data: { base: 'BTC' } } },
     ]
 
     requests.forEach((req) => {
       it(`${req.name}`, async () => {
         try {
-          await execute(req.input, {})
+          await execute(req.input as unknown as AdapterRequest<TInputParameters>, {})
         } catch (error) {
-          const errorResp = Requester.errored(jobID, error)
+          const errorResp = Requester.errored(jobID, error as AdapterError)
           assertError({ expected: 400, actual: errorResp.statusCode }, errorResp, jobID)
         }
       })

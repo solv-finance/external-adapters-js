@@ -1,35 +1,21 @@
-import { AdapterRequest } from '@chainlink/types'
-import request, { SuperTest, Test } from 'supertest'
-import * as process from 'process'
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import { server as startServer } from '../../src'
-import * as nock from 'nock'
-import * as http from 'http'
 import { mockRateResponseFailure, mockRateResponseSuccess } from './fixtures'
-import { AddressInfo } from 'net'
+import { setupExternalAdapterTest } from '@chainlink/ea-test-helpers'
+import type { SuiteContext } from '@chainlink/ea-test-helpers'
+import { SuperTest, Test } from 'supertest'
 
 describe('execute', () => {
   const id = '1'
-  let server: http.Server
-  let req: SuperTest<Test>
 
-  beforeAll(async () => {
-    if (process.env.RECORD) {
-      nock.recorder.rec()
-    }
-    server = await startServer()
-    req = request(`localhost:${(server.address() as AddressInfo).port}`)
-  })
+  const context: SuiteContext = {
+    req: null,
+    server: startServer,
+  }
 
-  afterAll((done) => {
-    if (process.env.RECORD) {
-      nock.recorder.play()
-    }
+  const envVariables = {}
 
-    nock.restore()
-    nock.cleanAll()
-    nock.enableNetConnect()
-    server.close(done)
-  })
+  setupExternalAdapterTest(envVariables, context)
 
   describe('rate api', () => {
     const data: AdapterRequest = {
@@ -43,9 +29,35 @@ describe('execute', () => {
     it('should return success', async () => {
       mockRateResponseSuccess()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
+        .set('Accept', '*/*')
+        .set('Content-Type', 'application/json')
+        .expect('Content-Type', /json/)
+        .expect(200)
+      expect(response.body).toMatchSnapshot()
+    })
+
+    const dataWithOverride: AdapterRequest = {
+      id,
+      data: {
+        base: 'overridablevalue',
+        quote: 'USDT-6D8',
+        overrides: {
+          binance_dex: {
+            overridablevalue: 'BUSD-BD1',
+          },
+        },
+      },
+    }
+
+    it('should return success for override', async () => {
+      mockRateResponseSuccess()
+
+      const response = await (context.req as SuperTest<Test>)
+        .post('/')
+        .send(dataWithOverride)
         .set('Accept', '*/*')
         .set('Content-Type', 'application/json')
         .expect('Content-Type', /json/)
@@ -66,7 +78,7 @@ describe('execute', () => {
     it('should return failure', async () => {
       mockRateResponseFailure()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')

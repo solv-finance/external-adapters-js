@@ -1,27 +1,34 @@
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import nock from 'nock'
 import expectedTestData1 from '../mock-data/expected-test-data-1.json'
 import expectedTestData2 from '../mock-data/expected-test-data-2.json'
+import expectedTestData3 from '../mock-data/expected-test-data-3.json'
+import expectedTestData4 from '../mock-data/expected-test-data-4.json'
 import mockRewards from '../mock-data/rewards.json'
 
-const fileUploadMatches = (expected) => (body) => {
+const fileUploadMatches = (expected: string) => (body: string) => {
   const lines = body.split('\r\n')
   return lines.length === 7 && lines[4] === expected
 }
 
-export const mockEthNode = (): nock =>
+export const mockEthNode = (): nock.Scope =>
   nock('http://127.0.0.1:8545', { encodedQueryParams: true })
     .persist()
     .post('/', { method: 'eth_chainId', params: [], id: /^\d+$/, jsonrpc: '2.0' })
-    .reply(200, (_, request) => ({ jsonrpc: '2.0', id: request['id'], result: '0x2a' }), [
-      'Content-Type',
-      'application/json',
-      'Connection',
-      'close',
-      'Vary',
-      'Accept-Encoding',
-      'Vary',
-      'Origin',
-    ])
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({ jsonrpc: '2.0', id: request['id'], result: '0x2a' }),
+      [
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
     .post('/', {
       method: 'eth_getBlockByNumber',
       params: ['latest', false],
@@ -30,7 +37,7 @@ export const mockEthNode = (): nock =>
     })
     .reply(
       200,
-      (_, request) => ({
+      (_, request: AdapterRequest) => ({
         jsonrpc: '2.0',
         id: request['id'],
         result: {
@@ -82,43 +89,51 @@ export const mockEthNode = (): nock =>
       ],
     )
     .post('/', { method: 'eth_gasPrice', params: [], id: /^\d+$/, jsonrpc: '2.0' })
-    .reply(200, (_, request) => ({ jsonrpc: '2.0', id: request['id'], result: '0x47868c00' }), [
-      'Date',
-      'Tue, 14 Sep 2021 09:19:34 GMT',
-      'Content-Type',
-      'application/json',
-      'Connection',
-      'close',
-      'Vary',
-      'Accept-Encoding',
-      'Vary',
-      'Origin',
-    ])
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({ jsonrpc: '2.0', id: request['id'], result: '0x47868c00' }),
+      [
+        'Date',
+        'Tue, 14 Sep 2021 09:19:34 GMT',
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
     .post('/', {
       method: 'eth_getTransactionCount',
       params: ['0x63fac9201494f0bd17b9892b9fae4d52fe3bd377', 'pending'],
       id: /^\d+$/,
       jsonrpc: '2.0',
     })
-    .reply(200, (_, request) => ({ jsonrpc: '2.0', id: request['id'], result: '0x0' }), [
-      'Date',
-      'Tue, 14 Sep 2021 09:19:34 GMT',
-      'Content-Type',
-      'application/json',
-      'Connection',
-      'close',
-      'Vary',
-      'Accept-Encoding',
-      'Vary',
-      'Origin',
-    ])
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({ jsonrpc: '2.0', id: request['id'], result: '0x0' }),
+      [
+        'Date',
+        'Tue, 14 Sep 2021 09:19:34 GMT',
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
     .post('/', {
       method: 'eth_estimateGas',
       params: [
         {
           type: '0x2',
-          maxFeePerGas: '0x9502f90e',
-          maxPriorityFeePerGas: '0x9502f900',
+          maxFeePerGas: '0x59682f0e',
+          maxPriorityFeePerGas: '0x59682f00',
           from: '0x63fac9201494f0bd17b9892b9fae4d52fe3bd377',
           to: '0xaffda0625b24a28eba18eb733c41c8481ec0d6d0',
           data: '0x15e2e0f941f9ff21e8f74f7f0e8f0ef5dec38b18075b8849a08a6a281f66a181bc409e3400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000003b6261666b7265696379626d7535636532756a7436637235677772687a6b79786768667661786f6469686164667132636e677279786f6b7a6f74756d0000000000',
@@ -127,45 +142,53 @@ export const mockEthNode = (): nock =>
       id: /^\d+$/,
       jsonrpc: '2.0',
     })
-    .reply(200, (_, request) => ({ jsonrpc: '2.0', id: request['id'], result: '0xbcc9' }), [
-      'Date',
-      'Tue, 14 Sep 2021 09:19:35 GMT',
-      'Content-Type',
-      'application/json',
-      'Connection',
-      'close',
-      'Vary',
-      'Accept-Encoding',
-      'Vary',
-      'Origin',
-    ])
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({ jsonrpc: '2.0', id: request['id'], result: '0xbcc9' }),
+      [
+        'Date',
+        'Tue, 14 Sep 2021 09:19:35 GMT',
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
     .post('/', { method: 'eth_blockNumber', params: [], id: /^\d+$/, jsonrpc: '2.0' })
-    .reply(200, (_, request) => ({ jsonrpc: '2.0', id: request['id'], result: '0x19edc7b' }), [
-      'Date',
-      'Tue, 14 Sep 2021 09:19:36 GMT',
-      'Content-Type',
-      'application/json',
-      'Connection',
-      'close',
-      'Vary',
-      'Accept-Encoding',
-      'Vary',
-      'Origin',
-    ])
+    .reply(
+      200,
+      (_, request: AdapterRequest) => ({ jsonrpc: '2.0', id: request['id'], result: '0x19edc7b' }),
+      [
+        'Date',
+        'Tue, 14 Sep 2021 09:19:36 GMT',
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
     .post('/', {
       method: 'eth_sendRawTransaction',
       params: [
-        '0x02f9012f2a80849502f900849502f90e82bcc994affda0625b24a28eba18eb733c41c8481ec0d6d080b8c415e2e0f941f9ff21e8f74f7f0e8f0ef5dec38b18075b8849a08a6a281f66a181bc409e3400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000003b6261666b7265696379626d7535636532756a7436637235677772687a6b79786768667661786f6469686164667132636e677279786f6b7a6f74756d0000000000c080a046720977009837657a08455a5f003728f96716dc8ca168b3f9bd3218ba1176afa0516510e655103b6107856e8195e347c8675baed1bdbddfb2f2ac9d9f1a929b2b',
+        '0x02f9012f2a808459682f008459682f0e82bcc994affda0625b24a28eba18eb733c41c8481ec0d6d080b8c415e2e0f941f9ff21e8f74f7f0e8f0ef5dec38b18075b8849a08a6a281f66a181bc409e3400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000003b6261666b7265696379626d7535636532756a7436637235677772687a6b79786768667661786f6469686164667132636e677279786f6b7a6f74756d0000000000c001a062b8764ce7a69fd9e272b321738f0b0007d9642ea3387dac1a4b25155eda1dd8a05e7564376590011a44ab9cd10f4793f3af101185b2a7d8d67c1b41fabc271ed1',
       ],
       id: /^\d+$/,
       jsonrpc: '2.0',
     })
     .reply(
       200,
-      (_, request) => ({
+      (_, request: AdapterRequest) => ({
         jsonrpc: '2.0',
         id: request['id'],
-        result: '0x8ea32f7f12cd574b309965365ad25412112dd20c172dc734e3430d51a5478565',
+        result: '0x9c1d509ceb5a9997d2dcbcf950546db7080bf86a8a68617d63c38d585497c692',
       }),
       [
         'Date',
@@ -182,17 +205,17 @@ export const mockEthNode = (): nock =>
     )
     .post('/', {
       method: 'eth_getTransactionReceipt',
-      params: ['0x8ea32f7f12cd574b309965365ad25412112dd20c172dc734e3430d51a5478565'],
+      params: ['0x9c1d509ceb5a9997d2dcbcf950546db7080bf86a8a68617d63c38d585497c692'],
       id: /^\d+$/,
       jsonrpc: '2.0',
     })
     .reply(
       200,
-      (_, request) => ({
+      (_, request: AdapterRequest) => ({
         jsonrpc: '2.0',
         id: request['id'],
         result: {
-          transactionHash: '0x8ea32f7f12cd574b309965365ad25412112dd20c172dc734e3430d51a5478565',
+          transactionHash: '0x9c1d509ceb5a9997d2dcbcf950546db7080bf86a8a68617d63c38d585497c692',
           transactionIndex: '0x1',
           blockNumber: '0xb',
           blockHash: '0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b',
@@ -218,7 +241,7 @@ export const mockEthNode = (): nock =>
       ],
     )
 
-export const mockIpfsRetroactiveRewardsData = (): nock =>
+export const mockIpfsRetroactiveRewardsData = (): nock.Scope =>
   nock('http://127.0.0.1:5001', { encodedQueryParams: true })
     .post('/api/v0/name/resolve')
     .query({
@@ -368,13 +391,45 @@ export const mockIpfsRetroactiveRewardsData = (): nock =>
         'chunked',
       ],
     )
+    .post('/api/v0/add', fileUploadMatches(JSON.stringify(expectedTestData3)))
+    .query({ 'stream-channels': 'true', 'cid-version': '1', progress: 'false' })
+    .reply(
+      200,
+      {
+        Name: 'bafkreicybmu5ce2ujt6cr5gwrhzkyxghfvaxodihadfq2cngryxokzotum',
+        Hash: 'bafkreicybmu5ce2ujt6cr5gwrhzkyxghfvaxodihadfq2cngryxokzotum',
+        Size: '807',
+      },
+      [
+        'Access-Control-Allow-Headers',
+        'X-Stream-Output, X-Chunked-Output, X-Content-Length',
+        'Access-Control-Expose-Headers',
+        'X-Stream-Output, X-Chunked-Output, X-Content-Length',
+        'Connection',
+        'close',
+        'Content-Type',
+        'application/json',
+        'Server',
+        'go-ipfs/0.9.1',
+        'Trailer',
+        'X-Stream-Error',
+        'Vary',
+        'Origin',
+        'X-Chunked-Output',
+        '1',
+        'Date',
+        'Mon, 13 Sep 2021 15:25:10 GMT',
+        'Transfer-Encoding',
+        'chunked',
+      ],
+    )
 
 export function mockIpfsResponseSuccess(): void {
   nock('http://127.0.0.1:5001', { encodedQueryParams: true })
     .post(
       '/api/v0/add',
       fileUploadMatches(
-        '{"epoch":123,"tradeFeesPaid":{"0xE4dDb4233513498b5aa79B98bEA473b01b101a67":123},"openInterest":{"0xE4dDb4233513498b5aa79B98bEA473b01b101a67":123},"quoteScore":{"0xE4dDb4233513498b5aa79B98bEA473b01b101a67":123}}',
+        '{"epoch":123,"tradeFeesPaid":{"0xE4dDb4233513498b5aa79B98bEA473b01b101a67":123},"openInterest":{"0xE4dDb4233513498b5aa79B98bEA473b01b101a67":123},"quoteScore":{"0xE4dDb4233513498b5aa79B98bEA473b01b101a67":123},"averageActiveStakedDYDX":{}}',
       ),
     )
     .query({ 'stream-channels': 'true', 'cid-version': '1', progress: 'false' })
@@ -578,6 +633,38 @@ export function mockIpfsResponseSuccess(): void {
         '1',
         'Date',
         'Fri, 14 Jan 2022 10:27:25 GMT',
+        'Transfer-Encoding',
+        'chunked',
+      ],
+    )
+    .post('/api/v0/add', fileUploadMatches(JSON.stringify(expectedTestData4)))
+    .query({ 'stream-channels': 'true', 'cid-version': '1', progress: 'false' })
+    .reply(
+      200,
+      {
+        Name: 'bafkreicybmu5ce2ujt6cr5gwrhzkyxghfvaxodihadfq2cngryxokzotum',
+        Hash: 'bafkreicybmu5ce2ujt6cr5gwrhzkyxghfvaxodihadfq2cngryxokzotum',
+        Size: '807',
+      },
+      [
+        'Access-Control-Allow-Headers',
+        'X-Stream-Output, X-Chunked-Output, X-Content-Length',
+        'Access-Control-Expose-Headers',
+        'X-Stream-Output, X-Chunked-Output, X-Content-Length',
+        'Connection',
+        'close',
+        'Content-Type',
+        'application/json',
+        'Server',
+        'go-ipfs/0.9.1',
+        'Trailer',
+        'X-Stream-Error',
+        'Vary',
+        'Origin',
+        'X-Chunked-Output',
+        '1',
+        'Date',
+        'Mon, 13 Sep 2021 15:25:10 GMT',
         'Transfer-Encoding',
         'chunked',
       ],

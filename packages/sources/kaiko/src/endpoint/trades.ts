@@ -1,17 +1,32 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteWithConfig, Includes, IncludePair, InputParameters } from '@chainlink/types'
+import { Requester, util, Validator } from '@chainlink/ea-bootstrap'
+import type {
+  Config,
+  ExecuteWithConfig,
+  IncludePair,
+  InputParameters,
+} from '@chainlink/ea-bootstrap'
 import {
   DEFAULT_INTERVAL,
   DEFAULT_SORT,
   DEFAULT_MILLISECONDS,
   NAME as AdapterName,
 } from '../config'
+import includes from '../config/includes.json'
+import overrides from '../config/symbols.json'
 
-export const supportedEndpoints = ['trades']
+export const supportedEndpoints = ['trades', 'price']
 
 const customError = (data: ResponseSchema) => data.result === 'error'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = {
+  base: string
+  quote: string
+  interval: string
+  millisecondsAgo: number
+  sort: string
+}
+
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'coin'],
     required: true,
@@ -22,22 +37,17 @@ export const inputParameters: InputParameters = {
     required: true,
     description: 'The symbol of the currency to convert',
   },
-  includes: {
-    aliases: ['overrides'],
-    required: false,
-    description: 'If base provided is found in overrides, that will be used',
-  },
   interval: {
     required: false,
     description:
       'The time interval to use in the query. NOTE: Changing this will likely require changing `millisecondsAgo` accordingly',
-    default: '1m',
+    default: '2m',
   },
   millisecondsAgo: {
     required: false,
     description:
       'Number of milliseconds from the current time that will determine start_time to use in the query',
-    default: 1800000,
+    default: 86_400_000, // 24 hours
   },
   sort: {
     required: false,
@@ -46,13 +56,24 @@ export const inputParameters: InputParameters = {
   },
 }
 
-const symbolUrl = (from: string, to: string) =>
-  to.toLowerCase() === 'eth'
-    ? directUrl(from, to)
-    : `/spot_exchange_rate/${from.toLowerCase()}/${to.toLowerCase()}`
+export type TOptions = {
+  url: string
+  inverse?: boolean
+}
 
-const directUrl = (from: string, to: string) =>
-  `/spot_direct_exchange_rate/${from.toLowerCase()}/${to.toLowerCase()}`
+const getUrl = (from: string, to: string) => ({
+  url: util.buildUrlPath('/spot_exchange_rate/:from/:to', {
+    from: from.toLowerCase(),
+    to: to.toLowerCase(),
+  }),
+})
+
+const getIncludesOptions = (_: Validator<TInputParameters>, include: IncludePair) => {
+  return {
+    ...getUrl(include.from, include.to),
+    inverse: include.inverse,
+  }
+}
 
 export interface ResponseSchema {
   query: {
@@ -83,7 +104,7 @@ export interface ResponseSchema {
 }
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { includes, overrides })
 
   Requester.logConfig(config)
 
@@ -96,7 +117,12 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
     return date
   }
 
-  const { url, inverse } = getOptions(validator)
+  const { url, inverse } = util.getPairOptions<TOptions, TInputParameters>(
+    AdapterName,
+    validator,
+    getIncludesOptions,
+    getUrl,
+  )
 
   const interval = validator.validated.data.interval || DEFAULT_INTERVAL
   const start_time = calculateStartTime(
@@ -116,7 +142,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 
   const data = response.data.data.filter((x) => x.price !== null)
   if (data.length == 0) {
-    throw 'Unsupported Price Pair'
+    throw 'Kaiko is not returning any price data for this price pair, likely due to too low trading volume for the requested interval. This is not an issue with the external adapter.'
   }
 
   const result = Requester.validateResultNumber(
@@ -127,56 +153,4 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   )
 
   return Requester.success(jobRunID, Requester.withResult(response, result), config.verbose)
-}
-
-const getOptions = (
-  validator: Validator,
-): {
-  url: string
-  inverse?: boolean
-} => {
-  const base = validator.overrideSymbol(AdapterName) as string
-  const quote = validator.validated.data.quote
-  const includes = validator.validated.includes || []
-
-  const includeOptions = getIncludesOptions(validator, base, quote, includes)
-  return (
-    includeOptions ?? {
-      url: symbolUrl(base, quote),
-    }
-  )
-}
-
-const getIncludesOptions = (
-  validator: Validator,
-  from: string,
-  to: string,
-  includes: string[] | Includes[],
-) => {
-  const include = getIncludes(validator, from, to, includes)
-  if (!include) return undefined
-  return {
-    url: directUrl(include.from, include.to),
-    inverse: include.inverse,
-  }
-}
-
-const getIncludes = (
-  validator: Validator,
-  from: string,
-  to: string,
-  includes: string[] | Includes[],
-): IncludePair | undefined => {
-  if (includes.length === 0) return undefined
-
-  const presetIncludes = validator.overrideIncludes(AdapterName, from, to)
-  if (presetIncludes && typeof includes[0] === 'string') return presetIncludes
-  else if (typeof includes[0] === 'string') {
-    return {
-      from,
-      to: includes[0],
-      inverse: false,
-    }
-  }
-  return presetIncludes
 }

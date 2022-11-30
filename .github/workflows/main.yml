@@ -1,4 +1,4 @@
-name: Actions
+name: Test & build
 
 on:
   push:
@@ -7,86 +7,66 @@ on:
       - develop
   pull_request: ~
 
+concurrency:
+  group: main-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   packages:
     name: Verify dependency package archives
     runs-on: [self-hosted, sdlc-ghr-prod]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-      - name: Install Yarn
-        run: npm install -g yarn
-      - name: Re-download dependencies & verify checksum
-        run: yarn install --check-cache
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
 
   run-integration-tests:
     name: Run integration tests
     runs-on: [self-hosted, sdlc-ghr-prod]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-      - name: Install Yarn
-        run: npm install -g yarn
-      - run: yarn install
-      - run: yarn setup
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
       - run: timeout 300 yarn test:ci:integration
-      - uses: codecov/codecov-action@v2
-        with:
-          flags: integration
-          fail_ci_if_error: false # TODO: Set back to true once coverage reports are consistent
-          override_commit: ${{ github.sha }} # PR merge commit, what checkout@v2 uses by default
+  # Disable Codecov until we can make it reliable: sc-22561
+  #      - uses: codecov/codecov-action@v2
+  #        with:
+  #          flags: integration
+  #          fail_ci_if_error: false # TODO: Set back to true once coverage reports are consistent
+  #          override_commit: ${{ github.sha }} # PR merge commit, what checkout@v2 uses by default
 
   run-unit-tests:
     name: Run unit tests
     runs-on: [self-hosted, sdlc-ghr-prod]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-      - name: Install Yarn
-        run: npm install -g yarn
-      - run: yarn install
-      - run: yarn setup
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
       - run: yarn test:ci:unit
-      - uses: codecov/codecov-action@v2
-        with:
-          flags: unit
-          fail_ci_if_error: false # TODO: Set back to true once coverage reports are consistent
-          override_commit: ${{ github.sha }} # PR merge commit, what checkout@v2 uses by default
+  # Disable Codecov until we can make it reliable: sc-22561
+  #      - uses: codecov/codecov-action@v2
+  #        with:
+  #          flags: unit
+  #          fail_ci_if_error: false # TODO: Set back to true once coverage reports are consistent
+  #          override_commit: ${{ github.sha }} # PR merge commit, what checkout@v2 uses by default
 
   run-basic-checks:
-    name: Run linters and unit tests
+    name: Run linters
     runs-on: [self-hosted, sdlc-ghr-prod]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-      - name: Install Yarn
-        run: npm install -g yarn
-      - run: yarn install
-      - run: yarn setup
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
       - run: yarn lint
+      - run: yarn setup-tests
       - run: yarn format:check
 
-  # Changeset check
-  adapter-change-has-changeset:
-    name: Adapter changes accompanied by a changeset
-    runs-on: ubuntu-latest
+  run-docmentation-check:
+    name: Documentation generation test
+    runs-on: [self-hosted, sdlc-ghr-prod]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Check whether adapter change also has a changeset
-        id: adapter_change_has_changeset
-        run: ./.github/isvalidadapterchange.sh
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+      - name: Test Master List Generation
+        run: yarn generate:master-list -v
+      - name: Test README Generation
+        run: yarn generate:readme -a -v
 
   # Read build strategy matrix of adapters, from a json file
   matrix-adapters:
@@ -94,10 +74,8 @@ jobs:
     outputs:
       matrix: ${{ steps.create-matrix.outputs.result }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
       - name: Generate job matrix
         id: create-matrix
         run: yarn generate:gha:matrix
@@ -109,12 +87,8 @@ jobs:
     strategy:
       matrix: ${{fromJson(needs.matrix-adapters.outputs.matrix)}}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14.x'
-      - name: Install yarn deps
-        run: yarn
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
       - name: Generate docker-compose file
         run: yarn generate:docker-compose
       - run: docker-compose -f docker-compose.generated.yaml build ${{ matrix.adapter.name }}

@@ -1,11 +1,12 @@
-import { Requester, Validator, util } from '@chainlink/ea-bootstrap'
-import {
+import { Requester, Validator, util, CacheKey } from '@chainlink/ea-bootstrap'
+import type {
   ExecuteWithConfig,
   Config,
   InputParameters,
   AdapterRequest,
   AxiosResponse,
-} from '@chainlink/types'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
 import { NAME as AdapterName } from '../config'
 
 export const supportedEndpoints = ['tickers', 'forex', 'price']
@@ -15,10 +16,18 @@ export const description = `Convert a currency or currencies into another curren
 
 **NOTE: the \`price\` endpoint is temporarily still supported, however, is being deprecated. Please use the \`tickers\` endpoint instead.**`
 
-export const inputParameters: InputParameters = {
-  base: ['base', 'from'],
-  quote: ['quote', 'to'],
-  quantity: false,
+export type TInputParameters = { base: string | string[]; quote: string | string[] }
+export const inputParameters: InputParameters<TInputParameters> = {
+  base: {
+    aliases: ['from'],
+    required: true,
+    description: 'The symbol of the currency to query',
+  },
+  quote: {
+    aliases: ['to'],
+    required: true,
+    description: 'The symbol of the currency to query',
+  },
 }
 
 export interface ResponseSchema {
@@ -46,19 +55,19 @@ export interface Tickers {
     l: number
     o: number
     v: number
-    prevDay: {
-      c: number
-      h: number
-      l: number
-      o: number
-      v: number
-      vw: number
-    }
-    ticker: string
-    todaysChange: number
-    todaysChangePerc: number
-    updated: number
   }
+  prevDay: {
+    c: number
+    h: number
+    l: number
+    o: number
+    v: number
+    vw: number
+  }
+  ticker: string
+  todaysChange: number
+  todaysChangePerc: number
+  updated: number
 }
 
 interface keyPair {
@@ -74,11 +83,11 @@ const handleBatchedRequest = (
   response: AxiosResponse<ResponseSchema>,
   resultPath: string[],
 ) => {
-  const payload: [AdapterRequest, number][] = []
+  const payload: AdapterBatchResponse = []
   const pairDict: keyPair = {}
   const supportedTickers: string[] = []
-  for (const b of request.data.base) {
-    for (const q of request.data.quote) {
+  for (const b of request.data.base as string[]) {
+    for (const q of request.data.quote as string[]) {
       pairDict[`C:${b}${q}`] = {
         base: String(b),
         quote: String(q),
@@ -91,13 +100,17 @@ const handleBatchedRequest = (
 
     const base = pairDict[pair.ticker].base
     const quote = pairDict[pair.ticker].quote
+    const individualRequest = {
+      ...request,
+      data: { ...request.data, base: base.toUpperCase(), quote: quote.toUpperCase() },
+    }
+
+    const result = Requester.validateResultNumber(pair, resultPath)
 
     payload.push([
-      {
-        ...request,
-        data: { ...request.data, base: base.toUpperCase(), quote: quote.toUpperCase() },
-      },
-      Requester.validateResultNumber(pair, resultPath),
+      CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+      individualRequest,
+      result,
     ])
   }
 
@@ -118,7 +131,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const validator = new Validator(request, inputParameters)
   const jobRunID = validator.validated.id
   const url = `/v2/snapshot/locale/global/markets/forex/tickers`
-  const from = validator.overrideSymbol(AdapterName)
+  const from = validator.overrideSymbol(AdapterName, validator.validated.data.base)
   const to = validator.validated.data.quote
   const pairArray = []
   for (const fromCurrency of util.formatArray(from)) {
@@ -128,7 +141,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   }
   const pairs = pairArray.toString()
   const params = {
-    ...config.api.params,
+    ...config.api?.params,
     tickers: pairs,
   }
   const options = {
@@ -140,7 +153,12 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const response = await Requester.request<ResponseSchema>(options)
   if (Array.isArray(from) || Array.isArray(to))
     return handleBatchedRequest(jobRunID, request, response, ['min', 'c'])
-  const result = Requester.validateResultNumber(response.data.tickers[0], ['min', 'c'])
+  const result = Requester.validateResultNumber(
+    response.data.tickers[0],
+    ['min', 'c'],
+    undefined,
+    'Data Provder Issue:  Result could not be found from response.  This is expected for some pairs during the weekend or on public holidays as the market for the pair might be closed.',
+  )
   return Requester.success(
     jobRunID,
     Requester.withResult(response, result),

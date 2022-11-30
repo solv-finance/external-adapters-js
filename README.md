@@ -8,18 +8,20 @@ This repository contains the source code for Chainlink external adapters. If you
 2. [How to Run](#How-to-Run)
 3. [Testing](#Testing)
 4. [Deployment](#Deployment)
-5. [Advanced Features](#Advanced-Features)
+5. [EA Versioning](#External-Adapters-Versioning)
+6. [Advanced Features](#Advanced-Features)
 
 ## Getting Started
 
 ### Requirements
 
+- Node.js v16
 - Yarn
 
 ### Install
 
 ```sh
-$ yarn
+yarn
 ```
 
 Installs the dependencies for all workspaces.
@@ -27,10 +29,18 @@ Installs the dependencies for all workspaces.
 ### Setup
 
 ```sh
-$ yarn setup
+yarn setup
 ```
 
 Runs the setup step for all adapters. Typically this step just compiles TypeScript, but may involve other tasks.
+
+### Clean
+
+```sh
+yarn clean
+```
+
+Clears all build files/directories. Useful in case of issues when installing dependencies or running setup.
 
 ### Folder Structure
 
@@ -73,24 +83,24 @@ Every External Adapter has some optional environment variables for customizing b
 Use the start command while in the directory of the adapter that you would like to run. For example:
 
 ```sh
-$ cd packages/sources/coingecko
-$ yarn start
+cd packages/sources/coingecko
+yarn start
 ```
 
 ### Run as Docker Container
 
 1. All of the external-adapters have a service that is created when the repo's docker-compose file is generated.
 
-This can be done by running the following command in the root of the repository:
+This can be done by running the following command in the root of the repository (after `yarn && yarn setup`):
 
 ```sh
-$ yarn generate:docker-compose
+yarn generate:docker-compose
 ```
 
 2. Next create a container image. Use the generated `docker-compose.generated.yaml` file along with `docker-compose build`.
 
 ```sh
-$ docker-compose -f docker-compose.generated.yaml build [adapter-name]
+docker-compose -f docker-compose.generated.yaml build [adapter-name]
 ```
 
 Where `[adapter-name]` is replaced with the following:
@@ -102,19 +112,19 @@ Where `[adapter-name]` is replaced with the following:
 For example the `bravenewcoin` external adapter uses `bravenewcoin-adapter`:
 
 ```sh
-$ docker-compose -f docker-compose.generated.yaml build bravenewcoin-adapter
+docker-compose -f docker-compose.generated.yaml build bravenewcoin-adapter
 ```
 
 3. Then run it with:
 
 ```sh
-$ docker-compose -f docker-compose.generated.yaml run -p 8080:8080 -e API_KEY='YOUR_API_KEY' bravenewcoin-adapter
+docker-compose -f docker-compose.generated.yaml run -p 8080:8080 -e API_KEY='YOUR_API_KEY' bravenewcoin-adapter
 ```
 
 Environment files can also be passed through a file:
 
 ```
-$ docker run -p 8080:8080 --env-file="~/PATH_TO_ENV" -it proof-of-reserves-adapter:latest
+docker run -p 8080:8080 --env-file="~/PATH_TO_ENV" -it proof-of-reserves-adapter:latest
 ```
 
 ### Single-Command Docker App
@@ -122,13 +132,14 @@ $ docker run -p 8080:8080 --env-file="~/PATH_TO_ENV" -it proof-of-reserves-adapt
 This command will start all of your external adapters with performance features enabled and with pre-defined metrics charts for each EA on a single server.
 
 The first step will be to load up all of the environment variables that are needed across all of the External Adapters that will be ran. These can either be already be loaded into the environment or supplied to the startup script as a text file.
+Also make sure that [Grafana dependencies](./grafana/README.md#deployment) are installed.
 
 Starting from the root of the repository:
 
 1. Ensure that the project is setup and that the docker-compose file has been generated
 
 ```sh
-$ yarn && yarn setup && yarn generate:docker-compose
+yarn && yarn setup && yarn generate:docker-compose
 ```
 
 2. Use the startup script by supplying every External Adapter that you would like to run and monitor.
@@ -138,7 +149,7 @@ The adapter will have the format of `[[ADAPTER NAME]]-adapter`.
 For example:
 
 ```sh
-$ cd grafana && ./scripts/compose.sh coingecko-adapter coinmarketcap-adapter
+cd grafana && ./scripts/compose.sh coingecko-adapter coinmarketcap-adapter
 ```
 
 3. The running services can be found at the following ports:
@@ -174,31 +185,33 @@ coincodex-adapter:
 
 In order to test adapters locally, you may need to set environment variables such as `$API_KEY`. These can be found in the `README.md` for every adapter.
 
+When running integration tests make sure that metrics are disabled (`export METRICS_ENABLED=false`) and EA server is running on random available port (`export EA_PORT=0`).
+
 Make sure you run these commands from the ROOT of this monorepo.
 
 ```sh
 # Build all packages
-$ yarn setup
+yarn setup
 
 # Run all unit tests
-$ yarn test:unit
+yarn test:unit
 
 # Run all integration tests
-$ yarn test:integration
+yarn test:integration
 
-$ export adapter=myadapter # Your adapter name, coinmarketcap, coingecko, etc
+export adapter=myadapter # Your adapter name, coinmarketcap, coingecko, etc
 
 # Run integration tests for that adapter
-$ yarn test $adapter/test/integration
+yarn test $adapter/test/integration
 
 # Run unit tests for that adapter
-$ yarn test $adapter/test/unit
+yarn test $adapter/test/unit
 
 # Run a specific test for that adapter
-$ yarn test $adapter/test/unit/my-specific-test.test.ts
+yarn test $adapter/test/unit/my-specific-test.test.ts
 
 # Run a tests in watch mode, re-running tests that have code changes or dependency changes in them
-$ yarn test --watch $adapter/test/unit
+yarn test --watch $adapter/test/unit
 ```
 
 ## Deployment
@@ -217,20 +230,36 @@ The External Adapters are being tagged with semantic releases to allow for autom
 The EA container image can be download by using the [docker pull command](https://docs.docker.com/engine/reference/commandline/pull/). For example:
 
 ```sh
-$ docker pull public.ecr.aws/chainlink/adapters/1forge-adapter:latest
+docker pull public.ecr.aws/chainlink/adapters/1forge-adapter:latest
 ```
 
 To run the image use the [docker run command](https://docs.docker.com/engine/reference/run/). For example:
 
 ```sh
-$ docker run -p 8080:8080 -e API_KEY='YOUR_API_KEY' public.ecr.aws/chainlink/adapters/1forge-adapter:latest
+docker run -p 8080:8080 -e API_KEY='YOUR_API_KEY' public.ecr.aws/chainlink/adapters/1forge-adapter:latest
 ```
 
 It can be helpful to pass a text file to the container to handle giving multiple environment variables:
 
 ```sh
-$ docker run -p 8080:8080 --env-file=[[path to your env file]] public.ecr.aws/chainlink/adapters/1forge-adapter:latest
+docker run -p 8080:8080 --env-file=[[path to your env file]] public.ecr.aws/chainlink/adapters/1forge-adapter:latest
 ```
+
+## External Adapters Versioning
+
+For a full rundown on how versioning works, see [semver](https://semver.org/).
+
+What you need to know is that we make releases with the following versioning scheme: _major.minor.patch_.
+
+- A _patch_ version change usually has small changes/bug fixes. Upgrading/downgrading the _patch_ version number should never break compatibility.
+- A _minor_ version change usually adds functionality. Upgrading should never break compatibility, but you might not be able to downgrade the _minor_ version.
+- A _major_ version change usually introduces a breaking change. Both upgrading and downgrading the _major_ version number might require additional work. **Proceed with caution!**
+
+Best practice is to try to always keep it up to date!
+
+### Why do the versions jump up sometimes?
+
+Sometimes when looking at the releases for an EA you might see it jumped a version number. For example, the previous release might be 1.2.3 and then the next release is 1.2.5. The reason being is that each week we publish a new release. Whenever we make a change it includes a [changeset](https://github.com/changesets/changesets), which uses versioning semantics above (major, minor, and patch). Sometimes over the course of a given week, more than one changes are included in an adapter, so more than one changeset gets ingested into the release, thus causing the release number to jump. So if a version went from 1.2.3 to 1.2.5, that means two patches were pushed that week.
 
 ## Advanced Features
 
@@ -250,7 +279,7 @@ Caching allows for the EA to store successful responses and facilitate faster fu
 Caching is enabled by default. It can be turned off using:
 
 ```sh
-$ export CACHE_ENABLED=false
+export CACHE_ENABLED=false
 ```
 
 #### Rate Limiting
@@ -260,7 +289,7 @@ The Rate Limit middleware prevents hitting rate limit issues with data providers
 Rate Limiting is enabled by default. It can be turned off using:
 
 ```sh
-$ export RATE_LIMIT_ENABLED=false
+export RATE_LIMIT_ENABLED=false
 ```
 
 There are two options for defining API subscription capacity:
@@ -268,13 +297,13 @@ There are two options for defining API subscription capacity:
 1. Manual setting (example shown for limit at 10 requests/minute)
 
 ```sh
-$ export RATE_LIMIT_CAPACITY=60
+export RATE_LIMIT_CAPACITY=60
 ```
 
 2. Limits by provider data (example for Coingecko free tier)
 
 ```sh
-$ export RATE_LIMIT_API_PROVIDER=coingecko RATE_LIMIT_API_TIER=free
+export RATE_LIMIT_API_PROVIDER=coingecko RATE_LIMIT_API_TIER=free
 ```
 
 The `RATE_LIMIT_API_PROVIDER` environment variable is optional as when not given it will derive from the running adapter.
@@ -288,7 +317,7 @@ When a new unique request comes in to an EA the Cache Warming middleware will be
 Cache Warming is enabled by default. It can be turned off using:
 
 ```sh
-$ export WARMUP_ENABLED=false
+export WARMUP_ENABLED=false
 ```
 
 The cache will begin polling once the first request has been received.
@@ -302,7 +331,7 @@ It will also attempt to use batch requests to save API credits when possible.
 In order to use multiple API keys for an adapter, simply comma delimit the keys where you define the environment variable. This will work for an arbitrary number of keys.
 
 ```sh
-$ export API_KEY=myapikey1,myapikey2,myapikey3
+export API_KEY=myapikey1,myapikey2,myapikey3
 ```
 
 The external adapter will then randomly rotate the keys. Over time this should balance out the number of requests between each of the API keys.

@@ -5,19 +5,34 @@ import {
   AdapterRequest,
   ExecuteFactory,
   APIEndpoint,
-} from '@chainlink/types'
+  util,
+  IncludePair,
+} from '@chainlink/ea-bootstrap'
 import { Requester, Validator, Builder } from '@chainlink/ea-bootstrap'
-import { makeConfig, DEFAULT_WS_API_ENDPOINT } from './config'
+import { makeConfig, DEFAULT_WS_API_ENDPOINT, NAME } from './config'
 import * as endpoints from './endpoint'
+import overrides from './config/symbols.json'
+import includes from './config/includes.json'
 
-export const execute: ExecuteWithConfig<Config> = async (request, context, config) => {
-  return Builder.buildSelector(request, context, config, endpoints)
+export const execute: ExecuteWithConfig<Config, endpoints.TInputParameters> = async (
+  request,
+  context,
+  config,
+) => {
+  return Builder.buildSelector<Config, endpoints.TInputParameters>(
+    request,
+    context,
+    config,
+    endpoints,
+  )
 }
 
-export const endpointSelector = (request: AdapterRequest): APIEndpoint =>
-  Builder.selectEndpoint(request, makeConfig(), endpoints)
+export const endpointSelector = (
+  request: AdapterRequest,
+): APIEndpoint<Config, endpoints.TInputParameters> =>
+  Builder.selectEndpoint<Config, endpoints.TInputParameters>(request, makeConfig(), endpoints)
 
-export const makeExecute: ExecuteFactory<Config> = (config) => {
+export const makeExecute: ExecuteFactory<Config, endpoints.TInputParameters> = (config) => {
   return async (request, context) => execute(request, context, config || makeConfig())
 }
 
@@ -29,10 +44,14 @@ interface Message {
   mid: number
 }
 
-export const makeWSHandler = (config?: Config): MakeWSHandler | undefined => {
+export const makeWSHandler = (
+  config?: Config,
+): MakeWSHandler<
+  Message | any // TODO: full WS message types
+> => {
   const getSubscription = (pair?: string) => {
     const defaultConfig = config || makeConfig()
-    if (!pair) return
+    if (!pair) return ''
     const sub = {
       userKey: defaultConfig.wsApiKey,
       symbol: pair,
@@ -44,31 +63,43 @@ export const makeWSHandler = (config?: Config): MakeWSHandler | undefined => {
       input,
       endpoints.forex.inputParameters,
       {},
-      { shouldThrowError: false },
+      { shouldThrowError: false, includes, overrides },
     )
-    if (validator.error) return
-    const base = validator.validated.data.base.toUpperCase()
-    const quote = validator.validated.data.quote.toUpperCase()
-    return `${base}${quote}`
+    if (validator.error) return { pair: '', inverse: false }
+
+    const { from, to, inverse } = util.getPairOptions<IncludePair, endpoints.TInputParameters>(
+      NAME,
+      validator,
+      (_, i: IncludePair) => i,
+      (from: string, to: string) => ({ from, to }),
+    )
+
+    return {
+      pair: `${from.toUpperCase()}${to.toUpperCase()}`,
+      inverse,
+    }
   }
   return () => {
     const defaultConfig = config || makeConfig()
     return {
       connection: {
-        url: defaultConfig.api.baseWsURL || DEFAULT_WS_API_ENDPOINT,
+        url: defaultConfig.ws?.baseWsURL || DEFAULT_WS_API_ENDPOINT,
       },
-      shouldNotServeInputUsingWS: (input: AdapterRequest) =>
-        endpoints.forex.supportedEndpoints.indexOf(input.data.endpoint) === -1,
-      subscribe: (input: AdapterRequest) => getSubscription(getPair(input)),
-      unsubscribe: () => null, // Tradermade does not support unsubscribing.
+      shouldNotServeInputUsingWS: (input: AdapterRequest) => {
+        if (!input.data.endpoint) return true
+        return endpoints.forex.supportedEndpoints.indexOf(input.data.endpoint) === -1
+      },
+      subscribe: (input: AdapterRequest) => getSubscription(getPair(input).pair),
+      unsubscribe: () => undefined, // Tradermade does not support unsubscribing.
       subsFromMessage: (message: Message) => {
-        if (!message.symbol) return undefined
+        if (!message.symbol) return ''
         return getSubscription(message.symbol)
       },
       isError: () => false, // No error
       filter: (message: Message) => !!message.mid,
-      toResponse: (message: Message) => {
-        const result = Requester.validateResultNumber(message, ['mid'])
+      toResponse: (message: Message, input: AdapterRequest) => {
+        const { inverse } = getPair(input)
+        const result = Requester.validateResultNumber(message, ['mid'], { inverse })
         return Requester.success('1', { data: { result } })
       },
     }

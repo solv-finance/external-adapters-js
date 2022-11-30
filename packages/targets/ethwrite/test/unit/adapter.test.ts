@@ -1,11 +1,6 @@
-import { Requester } from '@chainlink/ea-bootstrap'
-import {
-  assertError,
-  assertSuccess,
-  startChain,
-  TESTING_PRIVATE_KEY,
-} from '@chainlink/ea-test-helpers'
-import { AdapterRequest, AdapterRequestMeta, AdapterResponse } from '@chainlink/types'
+import { AdapterError, Requester } from '@chainlink/ea-bootstrap'
+import { assertError, assertSuccess, startChain, hardhatConfig } from '@chainlink/ea-test-helpers'
+import { AdapterRequest, AdapterRequestMeta, AdapterResponse } from '@chainlink/ea-bootstrap'
 import { ethers } from 'ethers'
 import { makeExecute } from '../../src/adapter'
 import { abi, deploy } from '../helpers'
@@ -19,15 +14,24 @@ let execute: {
   (arg0: { id: string; data: Record<string, unknown>; meta: AdapterRequestMeta }): any
   (input: AdapterRequest): Promise<AdapterResponse>
 }
+const chainId = 31337
 
 describe('execute', () => {
   beforeAll(async () => {
     chain = await startChain(4444)
     rpcUrl = 'http://localhost:4444'
-    address = await deploy(TESTING_PRIVATE_KEY, rpcUrl)
+    address = await deploy(hardhatConfig.TESTING_PRIVATE_KEY, rpcUrl, chainId)
     provider = new ethers.providers.JsonRpcProvider(rpcUrl)
     contract = new ethers.Contract(address, abi, provider)
-    execute = makeExecute({ rpcUrl, privateKey: TESTING_PRIVATE_KEY, api: {} })
+    execute = makeExecute({
+      rpcUrl,
+      privateKey: hardhatConfig.TESTING_PRIVATE_KEY,
+      api: {},
+      chainId: chainId,
+    }) as {
+      (arg0: { id: string; data: Record<string, unknown>; meta: AdapterRequestMeta }): any
+      (input: AdapterRequest): Promise<AdapterResponse>
+    }
   })
 
   afterAll(async () => {
@@ -169,7 +173,7 @@ describe('execute', () => {
             data: { ...req.testData.data, exAddr: address },
           } as AdapterRequest)
         } catch (error) {
-          const errorResp = Requester.errored(jobID, error)
+          const errorResp = Requester.errored(jobID, error as AdapterError)
           assertError({ expected: 400, actual: errorResp.statusCode }, errorResp, jobID)
         }
       })

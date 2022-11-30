@@ -1,73 +1,102 @@
 # Chainlink External Adapter for Gemini
 
+![2.2.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/gemini/package.json)
+
 An external adapter to get data from Gemini
 
-### Environment Variables
+Base URL https://api.gemini.com
 
-This adapter takes no environment variables.
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
 
----
+## Environment Variables
 
-### Input Parameters
-
-| Required? |   Name   |     Description     |            Options             | Defaults to |
-| :-------: | :------: | :-----------------: | :----------------------------: | :---------: |
-|           | endpoint | The endpoint to use | [reserves](#Reserves-Endpoint) |  reserves   |
+| Required? |     Name     | Description |  Type  | Options |         Default          |
+| :-------: | :----------: | :---------: | :----: | :-----: | :----------------------: |
+|           | API_ENDPOINT |             | string |         | `https://api.gemini.com` |
 
 ---
+
+## Input Parameters
+
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
+
+| Required? |   Name   |     Description     |  Type  |            Options             |  Default   |
+| :-------: | :------: | :-----------------: | :----: | :----------------------------: | :--------: |
+|           | endpoint | The endpoint to use | string | [reserves](#reserves-endpoint) | `reserves` |
 
 ## Reserves Endpoint
 
+`reserves` is the only supported name for this endpoint.
+
 ### Input Params
 
-| Required? |            Name             |                       Description                        | Options | Defaults to |
-| :-------: | :-------------------------: | :------------------------------------------------------: | :-----: | :---------: |
-|    ✅     | `token`, `asset`, or `coin` |             The symbol of the token to query             | `EFIL`  |             |
-|           |          `chainId`          | An identifier for which network of the blockchain to use |         |  `mainnet`  |
-|           |          `network`          |                                                          |         | `filecoin`  |
+| Required? |  Name   |     Aliases     |                       Description                        |  Type  | Options |  Default   | Depends On | Not Valid With |
+| :-------: | :-----: | :-------------: | :------------------------------------------------------: | :----: | :-----: | :--------: | :--------: | :------------: |
+|           |  token  | `asset`, `coin` |             The symbol of the token to query             | string |         |   `EFIL`   |            |                |
+|           | chainId |                 | An identifier for which network of the blockchain to use | string |         | `mainnet`  |            |                |
+|           | network |                 |                                                          | string |         | `filecoin` |            |                |
 
-### Sample Input
+### Example
+
+Request:
 
 ```json
 {
   "id": "1",
   "data": {
-    "token": "EFIL"
+    "token": "EFIL",
+    "chainId": "mainnet",
+    "network": "filecoin",
+    "endpoint": "reserves"
+  },
+  "debug": {
+    "cacheKey": "AeB8DrMgHWj63Dzq1Lv1k7MaCyE="
   }
 }
 ```
 
-### Sample Output
+Response:
 
 ```json
 {
   "jobRunID": "1",
-  "result": [
-    {
-      "address": "f2eaaj6w4evrdscw4s4o5c3df7ph725tbs3yvg6gi",
-      "chainId": "mainnet",
-      "network": "filecoin"
-    },
-    {
-      "address": "f225ey7bq53ur6sgrkxgf74hl2ftxkajupatwnmay",
-      "chainId": "mainnet",
-      "network": "filecoin"
-    }
-  ],
-  "statusCode": 200,
   "data": {
+    "addresses": [
+      "f2eaaj6w4evrdscw4s4o5c3df7ph725tbs3yvg6gi",
+      "f225ey7bq53ur6sgrkxgf74hl2ftxkajupatwnmay"
+    ],
+    "ethereum_supply": 33427.594125,
+    "currency": "EFIL",
     "result": [
       {
         "address": "f2eaaj6w4evrdscw4s4o5c3df7ph725tbs3yvg6gi",
-        "chainId": "mainnet",
-        "network": "filecoin"
+        "network": "filecoin",
+        "chainId": "mainnet"
       },
       {
         "address": "f225ey7bq53ur6sgrkxgf74hl2ftxkajupatwnmay",
-        "chainId": "mainnet",
-        "network": "filecoin"
+        "network": "filecoin",
+        "chainId": "mainnet"
       }
     ]
-  }
+  },
+  "result": [
+    {
+      "address": "f2eaaj6w4evrdscw4s4o5c3df7ph725tbs3yvg6gi",
+      "network": "filecoin",
+      "chainId": "mainnet"
+    },
+    {
+      "address": "f225ey7bq53ur6sgrkxgf74hl2ftxkajupatwnmay",
+      "network": "filecoin",
+      "chainId": "mainnet"
+    }
+  ],
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

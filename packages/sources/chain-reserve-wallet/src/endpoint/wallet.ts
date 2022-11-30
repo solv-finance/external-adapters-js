@@ -1,5 +1,11 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { AdapterResponse, Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  AdapterInputError,
+  Requester,
+  Validator,
+  AdapterDataProviderError,
+  util,
+} from '@chainlink/ea-bootstrap'
+import { Config, ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { ethers } from 'ethers'
 
 const networks = ['cardano', 'dogecoin']
@@ -26,7 +32,8 @@ export interface ResponseSchema {
 export const description =
   'This endpoint reads the set of custodial addresses from a smart contract and returns in as a response.'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { chainId: string; contractAddress: string; network: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   chainId: {
     description: 'The ID of the target PoR chain.',
     options: chainIds,
@@ -75,22 +82,39 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const { chainId, contractAddress, network } = validator.validated.data
 
   if (!isNetwork(network)) {
-    throw Error(`Unknown network: ${network}`)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `Unknown network: ${network}`,
+    })
   }
 
   if (!isChainId(chainId)) {
-    throw Error(`Unknown chainId: ${chainId}`)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `Unknown chainId: ${chainId}`,
+    })
   }
 
   const chain = networkChainMap[`${network}_${chainId}`]
 
   const rpcUrl = config.rpcUrl
-  const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl, config.chainId)
   const walletProviderContract = new ethers.Contract(contractAddress, abi, provider)
-  const addresses: string[] = await walletProviderContract.walletAddresses(chain)
+  let addresses: string[]
+  try {
+    addresses = await walletProviderContract.walletAddresses(chain)
+  } catch (e: any) {
+    throw new AdapterDataProviderError({
+      network,
+      message: util.mapRPCErrorMessage(e?.code, e?.message),
+      cause: e,
+    })
+  }
 
   const response = addresses.map((address) => ({ address, chainId, network }))
-  const result: AdapterResponse = {
+  const result = {
     jobRunID,
     result: response,
     data: {

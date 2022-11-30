@@ -1,6 +1,6 @@
 import nock from 'nock'
 
-export const mockRateResponseSuccess = (): nock =>
+export const mockRateResponseSuccess = (): nock.Scope =>
   nock('https://us.market-api.kaiko.io/v2/data/trades.v1', {
     encodedQueryParams: true,
     reqheaders: {
@@ -8,10 +8,10 @@ export const mockRateResponseSuccess = (): nock =>
     },
   })
     .get('/spot_exchange_rate/eth/usd')
-    .query((query) => true)
+    .query(() => true)
     .reply(
       200,
-      (_, request) => ({
+      () => ({
         query: {
           page_size: 100,
           start_time: '2021-10-21T20:23:47.224Z',
@@ -110,11 +110,11 @@ export const mockRateResponseSuccess = (): nock =>
         'Origin',
       ],
     )
-    .get('/spot_direct_exchange_rate/ltc/eth')
-    .query((query) => true)
+    .get('/spot_exchange_rate/ltc/eth')
+    .query(() => true)
     .reply(
       200,
-      (_, request) => ({
+      () => ({
         query: {
           page_size: 100,
           start_time: '2021-10-21T20:23:47.224Z',
@@ -279,13 +279,13 @@ export const mockRateResponseSuccess = (): nock =>
       ],
     )
 
-export const mockRateResponseFailure = (): nock =>
+export const mockRateResponseFailure = (): nock.Scope =>
   nock('https://us.market-api.kaiko.io/v2/data/trades.v1', {
     encodedQueryParams: true,
   })
     .get('/spot_exchange_rate/xxx/usd')
-    .query((query) => true)
-    .reply(400, (_, request) => 'Invalid base or quote', [
+    .query(() => true)
+    .reply(400, () => 'Invalid base or quote', [
       'Content-Type',
       'application/json',
       'Connection',

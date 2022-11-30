@@ -1,5 +1,11 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { Account, Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  AdapterDataProviderError,
+  AdapterError,
+  AdapterInputError,
+  Requester,
+  Validator,
+} from '@chainlink/ea-bootstrap'
+import { Account, Config, ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import RenJS from '@renproject/ren'
 import { btc } from '../coins'
 import { DEFAULT_NETWORK, DEFAULT_TOKEN_OR_CONTRACT } from '../config'
@@ -12,11 +18,13 @@ import {
   RenContract,
   resolveInToken,
 } from '../ren'
-import { PorInputAddress } from '@chainlink/proof-of-reserves-adapter/src/PorInputAddress'
+import { PorInputAddress } from '@chainlink/proof-of-reserves-adapter/src/utils/PorInputAddress'
+import { RenNetworkString } from '@renproject/interfaces'
 
 export const supportedEndpoints = ['address']
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { network: string; chainId: string; tokenOrContract: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   network: {
     required: false,
     description:
@@ -42,36 +50,56 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const { data } = validator.validated
 
   if (config.network && config.network !== data.network) {
-    throw Error(`Unsupported Ren network: ${config.network}.`)
+    throw new AdapterError({
+      jobRunID,
+      statusCode: 400,
+      message: `Unsupported Ren network: ${config.network}.`,
+    })
   }
 
   const chainId = data.chainId || DEFAULT_NETWORK
   if (!isRenNetwork(chainId)) {
-    throw Error(`Unknown Ren network: ${data.network}`)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `Unknown Ren network: ${data.network}`,
+    })
   }
 
   let tokenOrContract = data.tokenOrContract || DEFAULT_TOKEN_OR_CONTRACT
   tokenOrContract = tokenOrContract.length === 3 ? tokenOrContract.toUpperCase() : tokenOrContract
 
   if (!isAsset(tokenOrContract) && !isRenContract(tokenOrContract)) {
-    throw Error(`Unknown Ren tokenOrContract: ${tokenOrContract}`)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `Unknown Ren tokenOrContract: ${tokenOrContract}`,
+    })
   }
 
   const renContract = isAsset(tokenOrContract) ? resolveInToken(tokenOrContract) : tokenOrContract
 
   // Only BTC is supported for now
   if (renContract !== RenContract.Btc2Eth && renContract !== RenContract.Eth2Btc) {
-    throw Error(`Unsupported token: ${tokenOrContract}`)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `Unsupported token: ${tokenOrContract}`,
+    })
   }
 
   const bitcoinNetwork = btc.getNetwork(chainId)
   if (!bitcoinNetwork) {
-    throw Error(`Unknown Bitcoin network: ${chainId}`)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `Unknown Bitcoin network: ${chainId}`,
+    })
   }
 
   const _getAddress = async (): Promise<string | undefined> => {
     if (!config.api) return undefined
-    const { renVM } = new RenJS(chainId, {
+    const { renVM } = new RenJS(chainId as RenNetworkString, {
       // use v1 legacy version
       useV2TransactionFormat: false,
     })
@@ -80,7 +108,13 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
     return btc.p2pkh(out, bitcoinNetwork).address
   }
 
-  const address = await _getAddress()
+  let address
+  try {
+    address = await _getAddress()
+  } catch (e: any) {
+    throw new AdapterDataProviderError({ network: config.network, cause: e })
+  }
+
   if (!address) {
     throw Error(`Address must be non-empty`)
   }

@@ -1,7 +1,7 @@
-import { AdapterContext, AdapterRequest } from '@chainlink/types'
+import type { AdapterContext, AdapterData, AdapterRequest, UnknownWSMessage } from '../../../types'
 import { combineReducers, createReducer, isAnyOf } from '@reduxjs/toolkit'
-import { logger } from '../../modules'
-import { getHashOpts, hash } from '../../util'
+import { logger } from '../../modules/logger'
+import { getHashOpts, hash } from '../../middleware/cache-key/util'
 import * as actions from './actions'
 
 /**
@@ -17,8 +17,8 @@ import * as actions from './actions'
  * The structure of which may change with every adapter, so we need to
  * use exclude mode to handle dynamically changing properties.
  */
-export const getSubsId = (subscriptionMsg: AdapterRequest): string =>
-  hash(subscriptionMsg, getHashOpts(), 'exclude')
+export const getSubsId = (subscriptionMsg: UnknownWSMessage | AdapterRequest): string =>
+  hash(subscriptionMsg as AdapterRequest<AdapterData>, getHashOpts(), 'exclude')
 
 export interface ConnectionsState {
   total: number
@@ -28,9 +28,11 @@ export interface ConnectionsState {
       active: boolean
       connecting: number
       wasEverConnected?: boolean
-      connectionParams?: {
-        [T: string]: string
-      }
+      connectionParams?:
+        | UnknownWSMessage
+        | {
+            [T: string]: string
+          }
       requestId: number
       isOnConnectChainComplete: boolean
     }
@@ -95,13 +97,19 @@ export const connectionsReducer = createReducer<ConnectionsState>(
     })
 
     builder.addCase(actions.connectFailed, (state, action) => {
-      state.all[action.payload.connectionInfo.key].connecting = 0
-      state.all[action.payload.connectionInfo.key].active = false
+      const { key } = action.payload.connectionInfo
+      // Check if connection is missing in state
+      if (!(key in state.all)) return
+      state.all[key].connecting = 0
+      state.all[key].active = false
+      state.all[key].requestId = 0
     })
 
     builder.addCase(actions.disconnectFulfilled, (state, action) => {
       // Remove connection
       const { key } = action.payload.config.connectionInfo
+      // Check if connection is missing in state
+      if (!(key in state.all)) return
       state.all[key].active = false
       state.all[key].connecting = 0 // turn off connecting
       state.all[key].requestId = 0
@@ -109,8 +117,12 @@ export const connectionsReducer = createReducer<ConnectionsState>(
 
     builder.addCase(actions.subscriptionErrorHandler, (state, action) => {
       const { key } = action.payload.connectionInfo
+      // Check if connection is missing in state
+      if (!(key in state.all)) return
       state.all[key].shouldNotRetryConnecting = action.payload.shouldNotRetryConnection
     })
+
+    builder.addCase(actions.WSReset, () => initConnectionsState)
 
     builder.addMatcher(
       isAnyOf(
@@ -137,7 +149,7 @@ export interface SubscriptionsState {
       subscribing: number
       input: AdapterRequest
       context: AdapterContext
-      subscriptionParams?: any
+      subscriptionParams?: Record<string, unknown> | UnknownWSMessage
       connectionKey: string
       shouldNotRetry?: boolean
       lastUpdatedAt?: number
@@ -201,14 +213,16 @@ export const subscriptionsReducer = createReducer<SubscriptionsState>(
     builder.addCase(actions.unsubscribeFulfilled, (state, action) => {
       // Remove subscription
       const key = getSubsId(action.payload.subscriptionMsg)
-
+      // Check if subscription is missing in state
+      if (!(key in state.all)) return
       state.all[key].active = false
       state.all[key].unsubscribed = true
       state.all[key].subscribing = 0
     })
 
     builder.addCase(actions.subscriptionErrorHandler, (state, action) => {
-      const key = getSubsId(action.payload.subscriptionMsg)
+      const subscriptionMsg = action.payload.subscriptionMsg ?? {}
+      const key = getSubsId(subscriptionMsg)
       if (state.all[key]) {
         state.all[key].shouldNotRetry = action.payload.shouldNotRetrySubscription
       }
@@ -223,6 +237,8 @@ export const subscriptionsReducer = createReducer<SubscriptionsState>(
       const key = action.payload.subscriptionKey
       state.all[key].lastUpdatedAt = action.payload.timestamp
     })
+
+    builder.addCase(actions.WSReset, () => initSubscriptionsState)
 
     builder.addMatcher(
       isAnyOf(actions.subscribeRequested, actions.subscribeFulfilled, actions.unsubscribeFulfilled),
@@ -239,3 +255,7 @@ export const rootReducer = combineReducers({
 })
 
 export type RootState = ReturnType<typeof rootReducer>
+export const initialState: RootState = {
+  connections: initConnectionsState,
+  subscriptions: initSubscriptionsState,
+}

@@ -1,12 +1,14 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import {
+import { Requester, Validator, CacheKey } from '@chainlink/ea-bootstrap'
+import type {
   ExecuteWithConfig,
   Config,
   AxiosResponse,
   AdapterRequest,
   InputParameters,
-} from '@chainlink/types'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
 import { NAME as AdapterName } from '../config'
+import overrides from '../config/symbols.json'
 
 export const supportedEndpoints = ['crypto', 'price', 'marketcap', 'volume']
 export const batchablePropertyPath = [{ name: 'base' }]
@@ -94,7 +96,8 @@ export const description = `The \`crypto\` endpoint fetches the price of a reque
 
 **NOTE: the \`price\` endpoint is temporarily still supported, however, is being deprecated. Please use the \`crypto\` endpoint instead.**`
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string | string[]; quote: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'coin', 'ids'],
     required: true,
@@ -119,23 +122,28 @@ const handleBatchedRequest = (
   jobRunID: string,
   request: AdapterRequest,
   response: AxiosResponse<ResponseSchema[]>,
-  validator: Validator,
+  validator: Validator<TInputParameters>,
   resultPath: string,
 ) => {
-  const payload: [AdapterRequest, number][] = []
+  const payload: AdapterBatchResponse = []
+
   for (const i in response.data) {
     const entry = response.data[i]
-    payload.push([
-      {
-        ...request,
-        data: {
-          ...request.data,
-          base: validator
-            .overrideReverseLookup(AdapterName, 'overrides', entry.symbol)
-            .toUpperCase(),
-        },
+
+    const individualRequest = {
+      ...request,
+      data: {
+        ...request.data,
+        base: validator.overrideReverseLookup(AdapterName, 'overrides', entry.symbol).toUpperCase(),
       },
-      Requester.validateResultNumber(response.data[i], [resultPath]),
+    }
+
+    const result = Requester.validateResultNumber(response.data[i], [resultPath])
+
+    payload.push([
+      CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+      individualRequest,
+      result,
     ])
   }
 
@@ -148,13 +156,13 @@ const handleBatchedRequest = (
 }
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { overrides })
 
-  const symbol = validator.overrideSymbol(AdapterName)
+  const symbol = validator.overrideSymbol(AdapterName, validator.validated.data.base)
   const symbols = Array.isArray(symbol) ? symbol : [symbol]
   const convert = validator.validated.data.quote.toUpperCase()
   const jobRunID = validator.validated.id
-  const resultPath = validator.validated.data.resultPath
+  const resultPath = (validator.validated.data.resultPath || '').toString()
 
   const url = `/currencies/ticker`
   // Correct common tickers that are misidentified

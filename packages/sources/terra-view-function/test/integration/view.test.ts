@@ -1,52 +1,29 @@
-import { AdapterRequest } from '@chainlink/types'
-import request, { SuperTest, Test } from 'supertest'
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import process from 'process'
-import nock from 'nock'
-import http from 'http'
 import { server as startServer } from '../../src'
 import { mockLCDResponseSuccess } from './fixtures'
-import { AddressInfo } from 'net'
-
-let oldEnv: NodeJS.ProcessEnv
-
-beforeAll(() => {
-  oldEnv = JSON.parse(JSON.stringify(process.env))
-  process.env.CACHE_ENABLED = 'false'
-  process.env.COLUMBUS_5_RPC_URL = process.env.COLUMBUS_5_RPC_URL || 'http://localhost:1234/'
-  process.env.API_VERBOSE = 'true'
-  if (process.env.RECORD) {
-    nock.recorder.rec()
-  }
-})
-
-afterAll(() => {
-  process.env = oldEnv
-  if (process.env.RECORD) {
-    nock.recorder.play()
-  }
-
-  nock.restore()
-  nock.cleanAll()
-  nock.enableNetConnect()
-})
+import { TInputParameters } from '../../src/endpoint/view'
+import { setupExternalAdapterTest } from '@chainlink/ea-test-helpers'
+import type { SuiteContext } from '@chainlink/ea-test-helpers'
+import { SuperTest, Test } from 'supertest'
 
 describe('execute', () => {
   const id = '1'
-  let server: http.Server
-  let req: SuperTest<Test>
+  const context: SuiteContext = {
+    req: null,
+    server: startServer,
+  }
 
-  beforeAll(async () => {
-    server = await startServer()
-    req = request(`localhost:${(server.address() as AddressInfo).port}`)
-    process.env.CACHE_ENABLED = 'false'
-  })
+  const envVariables = {
+    CACHE_ENABLED: 'false',
+    COLUMBUS_5_RPC_URL: process.env.COLUMBUS_5_RPC_URL || 'http://localhost:1234/',
+    API_VERBOSE: 'true',
+  }
 
-  afterAll((done) => {
-    server.close(done)
-  })
+  setupExternalAdapterTest(envVariables, context)
 
   describe('with address/query', () => {
-    const data: AdapterRequest = {
+    const data: AdapterRequest<TInputParameters> = {
       id,
       data: {
         address: 'terra1dw5ex5g802vgrek3nzppwt29tfzlpa38ep97qy',
@@ -57,7 +34,7 @@ describe('execute', () => {
     it('should return success', async () => {
       mockLCDResponseSuccess()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')

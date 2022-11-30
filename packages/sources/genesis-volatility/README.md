@@ -1,19 +1,42 @@
 # Chainlink External Adapter for Genesis Volatility
 
-### Environment Variables
+![1.3.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/genesis-volatility/package.json)
 
-| Required? |  Name   |             Description             | Options | Defaults to |
-| :-------: | :-----: | :---------------------------------: | :-----: | :---------: |
-|    ✅     | API_KEY | Your API key for Genesis Volatility |         |             |
+Base URL https://app.pinkswantrading.com
+
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
+
+## Environment Variables
+
+| Required? |     Name     |             Description             |  Type  | Options |              Default              |
+| :-------: | :----------: | :---------------------------------: | :----: | :-----: | :-------------------------------: |
+|    ✅     |   API_KEY    | Your API key for Genesis Volatility | string |         |                                   |
+|           | API_ENDPOINT |                                     | string |         | `https://app.pinkswantrading.com` |
+
+---
+
+## Input Parameters
+
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
+
+| Required? |   Name   |     Description     |  Type  |              Options               |   Default    |
+| :-------: | :------: | :-----------------: | :----: | :--------------------------------: | :----------: |
+|           | endpoint | The endpoint to use | string | [volatility](#volatility-endpoint) | `volatility` |
+
+## Volatility Endpoint
+
+`volatility` is the only supported name for this endpoint.
 
 ### Input Params
 
-| Required? |                 Name                 |             Description             | Options | Defaults to |
-| :-------: | :----------------------------------: | :---------------------------------: | :-----: | :---------: |
-|    ✅     | `base`, `from`, `coin`, or `symbol`  | The symbol of the currency to query |         |             |
-|    ✅     | `days`, `key`, `result`, or `period` |   The key to get the result from    |         |             |
+| Required? |  Name  |          Aliases          |             Description             |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :----: | :-----------------------: | :---------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | symbol |  `base`, `coin`, `from`   | The symbol of the currency to query | string |         |         |            |                |
+|    ✅     |  days  | `key`, `period`, `result` |   The key to get the result from    | number |         |         |            |                |
 
-### Sample Input
+### Example
+
+Request:
 
 ```json
 {
@@ -21,31 +44,27 @@
   "data": {
     "coin": "ETH",
     "days": 1
+  },
+  "debug": {
+    "cacheKey": "0bf56ec137d7bfc07a543069c420564a3c1d2dc9"
   }
 }
 ```
 
-### Sample Output
+Response:
 
 ```json
 {
   "jobRunID": "1",
   "data": {
-    "data": {
-      "ChainlinkIv": [
-        {
-          "oneDayIv": 65.07,
-          "twoDayIv": 69.29,
-          "sevenDayIv": 70.53,
-          "fourteenDayIv": 73.1,
-          "twentyOneDayIv": 74.93,
-          "twentyEightDayIv": 76.32
-        }
-      ]
-    },
-    "result": 65.07
+    "result": 89.31
   },
-  "result": 65.07,
-  "statusCode": 200
+  "result": 89.31,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

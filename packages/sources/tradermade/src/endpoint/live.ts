@@ -1,10 +1,14 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, Config, InputParameters } from '@chainlink/types'
+import { IncludePair, Requester, util, Validator } from '@chainlink/ea-bootstrap'
+import { ExecuteWithConfig, Config, InputParameters } from '@chainlink/ea-bootstrap'
 import { NAME } from '../config'
+import overrides from '../config/symbols.json'
+import includes from '../config/includes.json'
+import * as endpoints from './'
 
 export const supportedEndpoints = ['live', 'commodities', 'stock']
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string; quote: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'symbol', 'market'],
     required: true,
@@ -33,27 +37,34 @@ export interface ResponseSchema {
 }
 
 export const execute: ExecuteWithConfig<Config> = async (input, _, config) => {
-  const validator = new Validator(input, inputParameters)
-
+  const validator = new Validator(input, inputParameters, {}, { includes, overrides })
   Requester.logConfig(config)
 
   const jobRunID = validator.validated.id
-  const symbol = (validator.overrideSymbol(NAME) as string).toUpperCase()
 
-  /**
-   * Note that currency can also mean equity.  This is why "to" is not a required variable
-   */
-  const to = (validator.validated.data.quote || '').toUpperCase()
-  const currency = `${symbol}${to}`
+  const { from, to, inverse } = validator.validated.data.quote
+    ? util.getPairOptions<IncludePair, endpoints.TInputParameters>(
+        NAME,
+        validator,
+        (_, i: IncludePair) => i,
+        (from: string, to: string) => ({ from, to }),
+      )
+    : {
+        from: validator.overrideSymbol(NAME, validator.validated.data.base),
+        to: validator.validated.data.quote || '',
+        inverse: false,
+      }
+
+  const currency = `${from.toUpperCase()}${to.toUpperCase()}`
 
   const params = {
-    ...config.api.params,
+    ...config.api?.params,
     currency,
   }
 
   const options = { ...config.api, params }
 
   const response = await Requester.request<ResponseSchema>(options)
-  const result = Requester.validateResultNumber(response.data, ['quotes', 0, 'mid'])
+  const result = Requester.validateResultNumber(response.data, ['quotes', 0, 'mid'], { inverse })
   return Requester.success(jobRunID, Requester.withResult(response, result), config.verbose)
 }

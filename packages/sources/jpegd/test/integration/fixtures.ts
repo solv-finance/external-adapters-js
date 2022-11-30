@@ -1,6 +1,6 @@
 import nock from 'nock'
 
-export const mockPunksValueResponseSuccess = (): nock =>
+export const mockPunksValueResponseSuccess = (): nock.Scope =>
   nock('https://jpegapi.com')
     .get('/punks')
     .query({
@@ -9,10 +9,35 @@ export const mockPunksValueResponseSuccess = (): nock =>
     })
     .reply(
       200,
-      (_, request) => ({
+      () => ({
         success: true,
         block: 14000000,
         value: 14000000,
+      }),
+      [
+        'Content-Type',
+        'application/json',
+        'Connection',
+        'close',
+        'Vary',
+        'Accept-Encoding',
+        'Vary',
+        'Origin',
+      ],
+    )
+
+export const mockCollectionsValueResponseSuccess = (): nock.Scope =>
+  nock('https://jpegapi.com')
+    .get('/api/v1/collections/jpeg-cards/values/latest')
+    .query({
+      api_key: 'test-key',
+    })
+    .reply(
+      200,
+      () => ({
+        success: true,
+        block: 14000000,
+        value: 69000000,
       }),
       [
         'Content-Type',

@@ -1,13 +1,20 @@
-import { Requester, Validator, AdapterError } from '@chainlink/ea-bootstrap'
-import { Execute, AdapterResponse, ExecuteWithConfig } from '@chainlink/types'
+import {
+  Requester,
+  Validator,
+  AdapterInputError,
+  InputParameters,
+  ExecuteFactory,
+} from '@chainlink/ea-bootstrap'
+import { AdapterResponse, ExecuteWithConfig } from '@chainlink/ea-bootstrap'
 import { makeConfig, DEFAULT_ENDPOINT, Config } from './config'
-import { conflux } from './endpoint'
+import { conflux, TInputParameters as EndpointInputParams } from './endpoint'
 
-const inputParams = {
-  endpoint: false,
-}
+export type TInputParameters = Record<string, never>
+export const inputParams: InputParameters<TInputParameters> = {}
 
-export const execute: ExecuteWithConfig<Config> = async (
+export type TInputParams = EndpointInputParams & TInputParameters
+
+export const execute: ExecuteWithConfig<Config, TInputParameters> = async (
   request,
   context,
   config,
@@ -24,7 +31,7 @@ export const execute: ExecuteWithConfig<Config> = async (
       return await conflux.execute(request, context, config)
     }
     default: {
-      throw new AdapterError({
+      throw new AdapterInputError({
         jobRunID,
         message: `Endpoint ${endpoint} not supported.`,
         statusCode: 400,
@@ -33,6 +40,6 @@ export const execute: ExecuteWithConfig<Config> = async (
   }
 }
 
-export const makeExecute = (config?: Config): Execute => {
+export const makeExecute: ExecuteFactory<Config, TInputParams> = (config) => {
   return async (request, context) => execute(request, context, config || makeConfig())
 }

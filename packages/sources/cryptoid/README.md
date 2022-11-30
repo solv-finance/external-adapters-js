@@ -1,29 +1,65 @@
 # Chainlink External Adapter for cryptoID
 
-### Configuration
+![1.3.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/cryptoid/package.json)
 
-The adapter takes the following environment variables:
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
 
-| Required? |  Name   | Description | Options | Defaults to |
-| :-------: | :-----: | :---------: | :-----: | :---------: |
-|           | API_KEY |             |         |             |
+## Environment Variables
+
+| Required? |  Name   | Description |  Type  | Options | Default |
+| :-------: | :-----: | :---------: | :----: | :-----: | :-----: |
+|    ✅     | API_KEY |             | string |         |         |
 
 ---
 
-## Input Params
+## Input Parameters
 
-- `blockchain` or `coin`: The blockchain name (required).
-- `endpoint`: The requested data point. One of (`difficulty`|`height`). Defaults: `difficulty`.
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
 
-## Sample Output
+| Required? |   Name   |     Description     |  Type  |                           Options                            |   Default    |
+| :-------: | :------: | :-----------------: | :----: | :----------------------------------------------------------: | :----------: |
+|           | endpoint | The endpoint to use | string | [difficulty](#bc_info-endpoint), [height](#bc_info-endpoint) | `difficulty` |
+
+## Bc_info Endpoint
+
+Supported names for this endpoint are: `difficulty`, `height`.
+
+### Input Params
+
+| Required? |    Name    | Aliases |     Description      |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :--------: | :-----: | :------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | blockchain | `coin`  | The blockchain name. | string |         |         |            |                |
+
+### Example
+
+Request:
+
+```json
+{
+  "id": "1",
+  "data": {
+    "coin": "BTC"
+  },
+  "debug": {
+    "cacheKey": "76f4c62584acabdeb7f0078f000fb644d588fda9"
+  }
+}
+```
+
+Response:
 
 ```json
 {
   "jobRunID": "1",
   "data": {
-    "result": 19298087186262.6
+    "result": 22674148233453.1
   },
-  "result": 19298087186262.6,
-  "statusCode": 200
+  "result": 22674148233453.1,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

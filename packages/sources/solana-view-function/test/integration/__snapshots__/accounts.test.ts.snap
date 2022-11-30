@@ -4,7 +4,7 @@ exports[`accounts errored calls returns an error when there are no addresses pas
 Object {
   "error": Object {
     "feedID": "{\\"data\\":{\\"addresses\\":[],\\"endpoint\\":\\"accounts\\"}}",
-    "message": "Required parameter addresses must be non-null and non-empty",
+    "message": "addresses parameter must be a non-empty array",
     "name": "AdapterError",
   },
   "jobRunID": "1",
@@ -18,7 +18,7 @@ Object {
   "error": Object {
     "feedID": "{\\"data\\":{\\"addresses\\":[\\"EMtjYGwPnXdtqK5SGL8CWGv4wgdBQN79UPoy53x9bBTJ\\"]}}",
     "message": "Please set the required env RPC_URL.",
-    "name": "AdapterError",
+    "name": "RequiredEnvError",
   },
   "jobRunID": "1",
   "status": "errored",

@@ -1,15 +1,28 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { AdapterRequest, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import { AdapterResponseEmptyError, Requester, util, Validator } from '@chainlink/ea-bootstrap'
+import {
+  AdapterRequest,
+  ExecuteWithConfig,
+  InputParameters,
+  AxiosResponse,
+} from '@chainlink/ea-bootstrap'
 import { Config, NAME } from '../config'
+import overrides from '../config/symbols.json'
 
 export const supportedEndpoints = ['price']
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string; quote: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'asset'],
     required: true,
     description: 'The symbol of the asset to query',
     type: 'string',
+  },
+  quote: {
+    aliases: ['to', 'term'],
+    description: 'The quote symbol of the asset to query',
+    type: 'string',
+    default: 'USD',
   },
 }
 
@@ -18,13 +31,13 @@ export const execute: ExecuteWithConfig<Config> = async (
   _,
   config: Config,
 ) => {
-  const validator = new Validator(input, inputParameters)
+  const validator = new Validator(input, inputParameters, {}, { overrides })
 
   const jobRunID = validator.validated.id
-  const symbol = (validator.overrideSymbol(NAME) as string).toUpperCase()
+  const symbol = validator.overrideSymbol(NAME, validator.validated.data.base).toUpperCase()
 
   // Fall back to getting the data from HTTP endpoint
-  const url = `/symbol/${symbol}`
+  const url = util.buildUrlPath('/symbol/:symbol', { symbol }, ':')
 
   const params = {
     c: `${config.client.key}:${config.client.secret}`,
@@ -36,9 +49,9 @@ export const execute: ExecuteWithConfig<Config> = async (
     params,
   }
 
-  const response = await Requester.request(request)
+  const response: AxiosResponse = await Requester.request(request)
   if (!response.data || response.data.length < 1) {
-    throw new Error('no result for query')
+    throw new AdapterResponseEmptyError({ jobRunID, message: 'no result for query' })
   }
   // Replace array by the first object in array
   // to avoid unexpected behavior when returning arrays.

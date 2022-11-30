@@ -1,35 +1,61 @@
 # Chainlink Fixer External Adapter
 
+![2.0.16](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/fixer/package.json)
+
 This adapter is for [Fixer.io](https://fixer.io/) and supports the convert endpoint.
 
-### Environment Variables
+Base URL https://data.fixer.io
 
-| Required? |  Name   | Description | Options | Defaults to |
-| :-------: | :-----: | :---------: | :-----: | :---------: |
-|    ✅     | API_KEY |             |         |             |
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
 
----
+## Environment Variables
 
-### Input Parameters
-
-| Required? |   Name   |     Description     |                         Options                         | Defaults to |
-| :-------: | :------: | :-----------------: | :-----------------------------------------------------: | :---------: |
-|           | endpoint | The endpoint to use | [convert](#Convert-Endpoint) [latest](#Latest-Endpoint) |   latest    |
+| Required? |     Name     | Description |  Type  | Options |         Default         |
+| :-------: | :----------: | :---------: | :----: | :-----: | :---------------------: |
+|    ✅     |   API_KEY    |             | string |         |                         |
+|           | API_ENDPOINT |             | string |         | `https://data.fixer.io` |
 
 ---
+
+## Input Parameters
+
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
+
+| Required? |   Name   |     Description     |  Type  |                                                    Options                                                     | Default  |
+| :-------: | :------: | :-----------------: | :----: | :------------------------------------------------------------------------------------------------------------: | :------: |
+|           | endpoint | The endpoint to use | string | [convert](#convert-endpoint), [forex](#latest-endpoint), [latest](#latest-endpoint), [price](#latest-endpoint) | `latest` |
 
 ## Convert Endpoint
 
+`convert` is the only supported name for this endpoint.
+
 ### Input Params
 
-| Required? |          Name           |                        Description                        |                                       Options                                        | Defaults to |
-| :-------: | :---------------------: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------: | :---------: |
-|    ✅     | `base`, `from`, `coin`  |            The symbol of the currency to query            |                                                                                      |             |
-|    ✅     | `quote`, `to`, `market` |         The symbol of the currency to convert to          |                                                                                      |             |
-|    🟡     |        `amount`         |               The amount of `base` currency               |                                                                                      |      1      |
-|    🟡     |       `overrides`       | If base provided is found in overrides, that will be used | [Format](../../core/bootstrap/src/lib/external-adapter/overrides/presetSymbols.json) |             |
+| Required? |  Name  |    Aliases     |               Description                |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :----: | :------------: | :--------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     |  base  | `coin`, `from` |   The symbol of the currency to query    | string |         |         |            |                |
+|    ✅     | quote  | `market`, `to` | The symbol of the currency to convert to | string |         |         |            |                |
+|           | amount |                |      The amount of `base` currency       | number |         |   `1`   |            |                |
 
-## Output
+### Example
+
+Request:
+
+```json
+{
+  "id": "1",
+  "data": {
+    "endpoint": "convert",
+    "base": "EUR",
+    "quote": "USD"
+  },
+  "debug": {
+    "cacheKey": "2633d6036edf24f9672e274cc5b60c788fd3cdea"
+  }
+}
+```
+
+Response:
 
 ```json
 {
@@ -37,115 +63,83 @@ This adapter is for [Fixer.io](https://fixer.io/) and supports the convert endpo
   "data": {
     "success": true,
     "query": {
-      "from": "GBP",
-      "to": "JPY",
+      "from": "USD",
+      "to": "EUR",
       "amount": 1
     },
     "info": {
-      "timestamp": 1519328414,
-      "rate": 148.972231
+      "timestamp": 1636390923,
+      "rate": 0.862805
     },
-    "historical": "",
-    "date": "2018-02-22",
-    "result": 148.972231
+    "date": "2021-11-08",
+    "result": 0.862805
   },
-  "result": 148.972231,
-  "statusCode": 200
+  "result": 0.862805,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
 
+---
+
 ## Latest Endpoint
 
-#### Returns a batched price comparison from one currency to a list of other currencies.
+Returns a batched price comparison from one currency to a list of other currencies.
+
+Supported names for this endpoint are: `forex`, `latest`, `price`.
 
 ### Input Params
 
-| Required? |            Name            |                        Description                        |                                       Options                                        | Defaults to |
-| :-------: | :------------------------: | :-------------------------------------------------------: | :----------------------------------------------------------------------------------: | :---------: |
-|    ✅     | `base`, `from`, or `coin`  |            The symbol of the currency to query            |                                                                                      |             |
-|    ✅     | `quote`, `to`, or `market` |        The symbol of the currencies to convert to         |                                                                                      |      1      |
-|    🟡     |        `overrides`         | If base provided is found in overrides, that will be used | [Format](../../core/bootstrap/src/lib/external-adapter/overrides/presetSymbols.json) |             |
+| Required? | Name  |    Aliases     |               Description                |  Type  | Options | Default | Depends On | Not Valid With |
+| :-------: | :---: | :------------: | :--------------------------------------: | :----: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | base  | `coin`, `from` |   The symbol of the currency to query    | string |         |         |            |                |
+|    ✅     | quote | `market`, `to` | The symbol of the currency to convert to |        |         |         |            |                |
 
-## Input
+### Example
+
+Request:
 
 ```json
 {
   "id": "1",
   "data": {
-    "base": "USD",
-    "quote": ["EUR", "AUD"]
+    "base": "EUR",
+    "quote": "USD"
+  },
+  "debug": {
+    "cacheKey": "55c3992cf1e9d0cd4f70dc1b3cea317c1fd9dbe2"
   }
 }
 ```
 
-## Output
+Response:
 
 ```json
 {
   "jobRunID": "1",
-  "debug": {
-    "staleness": 0,
-    "performance": 0.965477773,
-    "providerCost": 1
-  },
-  "statusCode": 200,
   "data": {
     "success": true,
-    "timestamp": 1519296206,
-    "base": "USD",
-    "date": "2021-07-29",
+    "timestamp": 1646446742,
+    "base": "EUR",
+    "date": "2022-03-05",
     "rates": {
-      "AUD": 1.278342,
-      "EUR": 1.278342,
-      "GBP": 0.908019,
-      "PLN": 3.731504
+      "USD": 1.094769
     },
-    "results": [
-      [
-        {
-          "id": "1",
-          "data": {
-            "base": "USD",
-            "quote": "AUD"
-          },
-          "rateLimitMaxAge": 960
-        },
-        1.278342
-      ],
-      [
-        {
-          "id": "1",
-          "data": {
-            "base": "USD",
-            "quote": "EUR"
-          },
-          "rateLimitMaxAge": 960
-        },
-        1.278342
-      ],
-      [
-        {
-          "id": "1",
-          "data": {
-            "base": "USD",
-            "quote": "GBP"
-          },
-          "rateLimitMaxAge": 960
-        },
-        0.908019
-      ],
-      [
-        {
-          "id": "1",
-          "data": {
-            "base": "USD",
-            "quote": "PLN"
-          },
-          "rateLimitMaxAge": 960
-        },
-        3.731504
-      ]
+    "result": 1.094769
+  },
+  "result": 1.094769,
+  "statusCode": 200,
+  "debug": {
+    "batchablePropertyPath": [
+      {
+        "name": "quote"
+      }
     ]
-  }
+  },
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

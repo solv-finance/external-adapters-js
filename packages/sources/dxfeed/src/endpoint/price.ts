@@ -1,4 +1,4 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
+import { Requester, Validator, CacheKey } from '@chainlink/ea-bootstrap'
 import {
   ExecuteWithConfig,
   Config,
@@ -6,15 +6,18 @@ import {
   AxiosResponse,
   AdapterRequest,
   EndpointResultPaths,
-} from '@chainlink/types'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
 import { NAME as AdapterName } from '../config'
+import overrides from '../config/symbols.json'
 
 export const supportedEndpoints = ['price', 'crypto', 'stock', 'forex', 'commodities']
 export const batchablePropertyPath = [{ name: 'base', limit: 120 }]
 
 const customError = (data: { status: string }) => data.status !== 'OK'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string | string[] }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     required: true,
     aliases: ['from', 'coin', 'market'],
@@ -27,7 +30,7 @@ const quoteEventSymbols: { [key: string]: boolean } = {
 }
 
 const getBase = (request: AdapterRequest) => {
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { overrides })
   if (validator.error) throw validator.error
   return validator.validated.data.base
 }
@@ -77,13 +80,13 @@ export interface ResponseSchema {
   }
 }
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { overrides })
 
   const jobRunID = validator.validated.id
-  const base = validator.overrideSymbol(config.name || AdapterName)
+  const base = validator.overrideSymbol(config.name || AdapterName, validator.validated.data.base)
   const symbol = getSymbol(base)
 
-  const events = quoteEventSymbols[symbol] ? 'Quote' : 'Trade'
+  const events: string = quoteEventSymbols[symbol] ? 'Quote' : 'Trade'
   const url = 'events.json'
 
   const params = {
@@ -96,6 +99,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
     url,
     params,
   }
+
   const response = await Requester.request<ResponseSchema>(options, customError)
 
   if (Array.isArray(base)) {
@@ -119,16 +123,18 @@ const handleBatchedRequest = (
   response: AxiosResponse<ResponseSchema>,
   events: string,
 ) => {
-  const payload: [AdapterRequest, number][] = []
-  for (const base in response.data[events]) {
-    payload.push([
-      {
-        ...request,
-        data: {
-          ...request.data,
-          base: response.data[events][base],
-        },
+  const payload: AdapterBatchResponse = []
+  for (const base in response.data[events as keyof ResponseSchema] as any) {
+    const individualRequest = {
+      ...request,
+      data: {
+        ...request.data,
+        base: (response as any).data[events][base],
       },
+    }
+    payload.push([
+      CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+      individualRequest,
       Requester.validateResultNumber(response.data, getResultPath(base)),
     ])
   }

@@ -1,12 +1,14 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
+import { Requester, Validator, CacheKey, AdapterInputError } from '@chainlink/ea-bootstrap'
 import { NAME as AdapterName } from '../config'
-import {
+import type {
   ExecuteWithConfig,
   Config,
   AxiosResponse,
   AdapterRequest,
   InputParameters,
-} from '@chainlink/types'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
+import overrides from '../config/symbols.json'
 
 export const supportedEndpoints = ['crypto', 'price', 'marketcap', 'volume']
 export const batchablePropertyPath = [{ name: 'base' }, { name: 'convert', limit: 120 }]
@@ -57,46 +59,59 @@ export interface ResponseSchema {
     elapsed: number
     credit_count: number
   }
+  cost: number
 }
 
 // Coin IDs fetched from the ID map: https://coinmarketcap.com/api/documentation/v1/#operation/getV1CryptocurrencyMap
 const presetIds: { [symbol: string]: number } = {
-  COMP: 5692,
-  BNT: 1727,
-  RCN: 2096,
-  UNI: 7083,
-  CRV: 6538,
-  FNX: 5712,
-  ETC: 1321,
+  '1INCH': 8104,
+  AAVE: 7278,
+  BAL: 5728,
   BAT: 1697,
+  BCH: 1831,
+  BNB: 1839,
+  BNT: 1727,
+  BTC: 1,
+  COMP: 5692,
   CRO: 3635,
-  LEO: 3957,
+  CRV: 6538,
+  ETC: 1321,
+  ETH: 1027,
+  FNX: 5712,
   FTT: 4195,
   HT: 2502,
-  OKB: 3897,
   KCS: 2087,
-  BTC: 1,
-  ETH: 1027,
-  BNB: 1839,
-  LINK: 1975,
-  BCH: 1831,
-  MKR: 1518,
-  AAVE: 7278,
-  UMA: 5617,
-  SNX: 2586,
-  REN: 2539,
+  KLAY: 4256,
   KNC: 1982,
+  LEO: 3957,
+  LINK: 1975,
+  MIM: 162,
+  MKR: 1518,
+  OHM: 9067,
+  OHMV2: 9067,
+  OKB: 3897,
+  RCN: 2096,
+  REN: 2539,
+  SNX: 2586,
+  STETH: 8085,
   SUSHI: 6758,
+  UMA: 5617,
+  UNI: 7083,
+  WOM: 5328,
   YFI: 5864,
-  BAL: 5728,
-  '1INCH': 8104,
 }
 
 export const description = `https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest
 
 **NOTE: the \`price\` endpoint is temporarily still supported, however, is being deprecated. Please use the \`crypto\` endpoint instead.**`
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = {
+  base: string | string[]
+  convert: string | string[]
+  cid: string
+  slug: string
+}
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'coin', 'sym', 'symbol'],
     description: 'The symbol of the currency to query',
@@ -123,10 +138,10 @@ const handleBatchedRequest = (
   jobRunID: string,
   request: AdapterRequest,
   response: AxiosResponse<ResponseSchema>,
-  validator: Validator,
+  validator: Validator<TInputParameters>,
   resultPath: string,
 ) => {
-  const payload: [AdapterRequest, number][] = []
+  const payload: AdapterBatchResponse = []
   for (const base in response.data.data) {
     const originalBase = validator.overrideReverseLookup(
       AdapterName,
@@ -134,22 +149,37 @@ const handleBatchedRequest = (
       response.data.data[base].symbol,
     )
     for (const quote in response.data.data[base].quote) {
-      payload.push([
-        {
-          ...request,
-          data: {
-            ...request.data,
-            base: originalBase.toUpperCase(),
-            convert: quote.toUpperCase(),
-          },
+      const individualRequest = {
+        ...request,
+        data: {
+          ...request.data,
+          base: originalBase.toUpperCase(),
+          convert: quote.toUpperCase(),
         },
-        Requester.validateResultNumber(response.data, ['data', base, 'quote', quote, resultPath]),
+      }
+
+      const result = Requester.validateResultNumber(response.data, [
+        'data',
+        base,
+        'quote',
+        quote,
+        resultPath,
+      ])
+
+      payload.push([
+        CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+
+        individualRequest,
+        result,
       ])
     }
   }
 
   const results = payload
-  response.data.cost = Requester.validateResultNumber(response.data, ['status', 'credit_count'])
+  response.data.cost = Requester.validateResultNumber<ResponseSchema>(response.data, [
+    'status',
+    'credit_count',
+  ])
   return Requester.success(
     jobRunID,
     Requester.withResult(response, undefined, results),
@@ -160,18 +190,23 @@ const handleBatchedRequest = (
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
   const url = 'cryptocurrency/quotes/latest'
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { overrides })
 
   const jobRunID = validator.validated.id
-  const symbol = validator.overrideSymbol(AdapterName)
+  const symbol = validator.overrideSymbol(AdapterName, validator.validated.data.base)
   // CMC allows a coin name to be specified instead of a symbol
   const slug = validator.validated.data.slug
   // CMC allows a coin ID to be specified instead of a symbol
   const cid = validator.validated.data.cid || ''
   const convert = validator.validated.data.convert
   if (!config.apiKey && Array.isArray(convert))
-    throw new Error(' Free CMCPro API only supports a single symbol to convert')
-  const resultPath = validator.validated.data.resultPath
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: ' Free CMCPro API only supports a single symbol to convert',
+    })
+  const resultPath = (validator.validated.data.resultPath || '').toString()
+
   const params: Record<string, string> = {
     convert: Array.isArray(convert)
       ? convert.map((symbol) => symbol.toUpperCase()).join(',')

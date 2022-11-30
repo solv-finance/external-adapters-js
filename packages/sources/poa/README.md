@@ -1,27 +1,71 @@
 # Chainlink External Adapter for POA Network gas price
 
+![1.3.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/poa/package.json)
+
+Base URL https://gasprice.poa.network/
+
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
+
+## Environment Variables
+
+| Required? |     Name     | Description |  Type  | Options |             Default             |
+| :-------: | :----------: | :---------: | :----: | :-----: | :-----------------------------: |
+|           | API_ENDPOINT |             | string |         | `https://gasprice.poa.network/` |
+
+---
+
+## Input Parameters
+
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
+
+| Required? |   Name   |     Description     |  Type  |            Options             |  Default   |
+| :-------: | :------: | :-----------------: | :----: | :----------------------------: | :--------: |
+|           | endpoint | The endpoint to use | string | [gasprice](#gasprice-endpoint) | `gasprice` |
+
+## Gasprice Endpoint
+
+`gasprice` is the only supported name for this endpoint.
+
 ### Input Params
 
-| Required? |  Name   |             Description             |         Options         | Defaults to |
-| :-------: | :-----: | :---------------------------------: | :---------------------: | :---------: |
-|    🟡     | `speed` | The symbol of the currency to query | `slow`,`fast`,`average` |  `average`  |
+| Required? | Name  | Aliases |    Description    |  Type  |          Options          |  Default  | Depends On | Not Valid With |
+| :-------: | :---: | :-----: | :---------------: | :----: | :-----------------------: | :-------: | :--------: | :------------: |
+|           | speed |         | The desired speed | string | `average`, `fast`, `slow` | `average` |            |                |
 
-## Output Format
+### Example
+
+Request:
+
+```json
+{
+  "id": "1",
+  "data": {
+    "speed": "average",
+    "endpoint": "gasprice"
+  },
+  "debug": {
+    "cacheKey": "1GHxqDIBX4s/n/jRmjOhhARCCIE="
+  }
+}
+```
+
+Response:
 
 ```json
 {
   "jobRunID": "1",
   "data": {
-    "health": true,
-    "block_number": 10012606,
-    "slow": 7.8,
-    "standard": 9,
-    "fast": 13,
-    "instant": 14.3,
-    "block_time": 13.392,
-    "result": 13000000000
+    "average": 152.5,
+    "fast": 174.5,
+    "slow": 139.4,
+    "result": 152500000000
   },
-  "result": 13000000000,
-  "statusCode": 200
+  "result": 152500000000,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

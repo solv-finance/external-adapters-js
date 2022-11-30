@@ -1,9 +1,23 @@
-import { Requester, Validator, AdapterError } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, Config, InputParameters } from '@chainlink/types'
+import {
+  Requester,
+  Validator,
+  AdapterError,
+  AxiosRequestConfig,
+  AxiosRequestHeaders,
+  AdapterDataProviderError,
+  AdapterConnectionError,
+} from '@chainlink/ea-bootstrap'
+import { ExecuteWithConfig, Config, InputParameters } from '@chainlink/ea-bootstrap'
 
 export const supportedEndpoints = ['graphql']
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = {
+  graphqlEndpoint: string
+  headers?: AxiosRequestHeaders
+  query: string
+  variables?: Record<string, string | number | boolean>
+}
+export const inputParameters: InputParameters<TInputParameters> = {
   graphqlEndpoint: {
     required: true,
     type: 'string',
@@ -27,9 +41,9 @@ export const inputParameters: InputParameters = {
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
   const validator = new Validator(request, inputParameters)
 
-  const jobRunID = validator.validated.jobRunID
-  const { graphqlEndpoint, query, variables, headers } = request.data
-  const reqConfig = {
+  const jobRunID = validator.validated.id
+  const { graphqlEndpoint, query, variables, headers } = request.data as TInputParameters
+  const reqConfig: AxiosRequestConfig = {
     ...config.api,
     url: graphqlEndpoint,
     data: {
@@ -39,16 +53,22 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
     headers,
   }
   try {
-    const response = await Requester.request(reqConfig)
+    const response = await Requester.request<Record<string, unknown>>(reqConfig)
 
     // Prevent circular reference
     const responseData = JSON.parse(JSON.stringify(response.data))
     response.data.result = responseData
     return Requester.success(jobRunID, response, config.verbose)
-  } catch (e) {
-    throw new AdapterError({
+  } catch (e: any) {
+    const error = e as any
+    const errorPayload = {
       jobRunID,
       message: `GraphQL request to ${graphqlEndpoint} failed with error ${e}`,
-    })
+    }
+    throw error.response
+      ? new AdapterDataProviderError(errorPayload)
+      : error.request
+      ? new AdapterConnectionError(errorPayload)
+      : new AdapterError(errorPayload)
   }
 }

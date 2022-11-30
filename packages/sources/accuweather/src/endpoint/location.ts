@@ -1,5 +1,15 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { AxiosResponse, Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  AdapterError,
+  AdapterResponseInvalidError,
+  Requester,
+  Validator,
+} from '@chainlink/ea-bootstrap'
+import {
+  AxiosResponse,
+  DefaultConfig,
+  ExecuteWithConfig,
+  InputParameters,
+} from '@chainlink/ea-bootstrap'
 import { utils } from 'ethers'
 
 export interface Location {
@@ -20,7 +30,21 @@ export type LocationResultEncoded = [boolean, string]
 
 export const supportedEndpoints = ['location']
 
-export const inputParameters: InputParameters = {
+export const description = `Returns location information by geoposition
+
+### Data Conversions - Location Endpoint
+
+**countryCode**
+
+ISO 3166 alpha-2 codes encoded as \`bytes2\`. See [list of ISO-3166 country codes](https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes)
+
+### Solidity types - Location Current Conditions Endpoint
+
+See [Solidity Types](#solidity-types)`
+
+export type TInputParameters = { lat: number | string; lon: number | string; encodeResult: boolean }
+
+export const inputParameters: InputParameters<TInputParameters> = {
   lat: {
     aliases: ['latitude'],
     description: 'The latitude (WGS84 standard). Must be `-90` to `90`.',
@@ -57,7 +81,9 @@ const throwError = (message: string): never => {
 export const getLocationResult = (locations: Location[]): LocationResult => {
   if (!locations.length) return noLocationResult
   if (locations.length > 1)
-    throw new Error(`Multiple locations found in: ${JSON.stringify(locations)}`)
+    throw new AdapterResponseInvalidError({
+      message: `Multiple locations found in: ${JSON.stringify(locations)}`,
+    })
 
   const locationResult = {
     locationFound: true,
@@ -91,7 +117,7 @@ export const encodeLocationResult = (result: LocationResult): string => {
   return utils.defaultAbiCoder.encode(dataTypes, dataValues)
 }
 
-export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
+export const execute: ExecuteWithConfig<DefaultConfig> = async (request, _, config) => {
   const validator = new Validator(request, inputParameters)
 
   const jobRunID = validator.validated.id
@@ -110,17 +136,22 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 
   const locations = response.data
   if (!Array.isArray(locations)) {
-    throw new Error(
-      `Unexpected response by geoposition: '${coord}'. Expected an array but got: ${JSON.stringify(
+    throw new AdapterResponseInvalidError({
+      jobRunID,
+      message: `Unexpected response by geoposition: '${coord}'. Expected an array but got: ${JSON.stringify(
         locations,
       )}.`,
-    )
+    })
   }
   let locationResult: LocationResult
   try {
     locationResult = getLocationResult(locations)
   } catch (error) {
-    throw new Error(`Unprocessable response by geoposition: '${coord}'. ${error}.`)
+    throw new AdapterError({
+      jobRunID,
+      statusCode: 500,
+      message: `Unprocessable response by geoposition: '${coord}'. ${error}.`,
+    })
   }
   let result: LocationResult | LocationResultEncoded
   if (encodeResult) {
@@ -129,11 +160,13 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
         ? [true, encodeLocationResult(locationResult)]
         : [false, '0x']
     } catch (error) {
-      throw new Error(
-        `Unexpected error encoding result: '${JSON.stringify(
+      throw new AdapterError({
+        jobRunID,
+        statusCode: 500,
+        message: `Unexpected error encoding result: '${JSON.stringify(
           locationResult,
         )}' by geoposition: '${coord}'. Reason: ${error}.`,
-      )
+      })
     }
   } else {
     result = locationResult

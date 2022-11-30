@@ -2,13 +2,11 @@ import { check, sleep } from 'k6'
 import { SharedArray } from 'k6/data'
 import http from 'k6/http'
 import { Rate } from 'k6/metrics'
-import {
-  ADAPTERS,
-  AdapterNames,
-  GROUP_COUNT,
-  httpPayloadsByAdapter,
-  wsPayloads,
-} from './config/index'
+import { Payload, Assertion } from './config/types'
+import { validateOutput } from './output-test'
+
+const GROUP_COUNT = 10
+const UNIQUE_PAYLOAD_LIMIT = 50
 
 // load the test duration from the environment or default to 12 hours
 let testDuration = '12h'
@@ -16,27 +14,39 @@ if (__ENV.TEST_DURATION) {
   testDuration = __ENV.TEST_DURATION
 }
 
+// load the test data, if data was generated then load it from the generated file
+let payloadData: Payload[] = []
+if (__ENV.PAYLOAD_GENERATED) {
+  const payloadPath = __ENV.PAYLOAD_PATH || '../src/config/http.json'
+  payloadData = new SharedArray('payloadData', function () {
+    const f = JSON.parse(open(payloadPath))
+    return f
+  })
+}
+
+let assertions: Assertion[] = []
+const assertionsPaths = (__ENV.ASSERTIONS_PATHS && __ENV.ASSERTIONS_PATHS.split(',')) || [
+  '/load/src/config/assertions/assertions.json',
+  `/load/src/config/assertions/${__ENV.CI_ADAPTER_NAME}-assertions.json`,
+]
+assertions = new SharedArray('assertionsPaths', function () {
+  const f = assertionsPaths
+    .map((assertionsPath: string) => JSON.parse(open(assertionsPath)))
+    .reduce((lst, item) => lst.concat(item), [])
+  return f
+})
+
 // set the k6 running options
 export const options = {
   vus: 1,
   duration: testDuration,
   thresholds: {
-    http_req_failed: ['rate<0.01'], // http errors should be less than 1%
-    http_req_duration: ['p(95)<200'], // 95% of requests should be below 200ms
+    http_req_failed: ['rate<0.05'], // http errors should be less than 5%
+    http_req_duration: ['p(90)<200'], // 90% of requests should be below 200ms
   },
 }
 
-let currIteration = 0
 export const errorRate = new Rate('errors')
-
-// load the test data, if data was generated then load it from the generated file
-let payloadData = wsPayloads
-if (__ENV.PAYLOAD_GENERATED) {
-  payloadData = new SharedArray('payloadData', function () {
-    const f = JSON.parse(open('../src/config/ws.json'))
-    return f
-  })
-}
 
 interface LoadTestGroupUrls {
   [loadTestGroup: string]: {
@@ -51,7 +61,9 @@ function getLoadTestGroupsUrls(): LoadTestGroupUrls {
      */
     return {
       local: {
-        [__ENV.LOCAL_ADAPTER_NAME]: 'http://host.docker.internal:8080',
+        [__ENV.LOCAL_ADAPTER_NAME]: `http://host.docker.internal:${
+          __ENV.LOCAL_ADAPTER_PORT || '8080'
+        }`,
       },
     }
   } else {
@@ -66,28 +78,20 @@ function getLoadTestGroupsUrls(): LoadTestGroupUrls {
         }
       })
     // load the adapters from the list and if we are running in CI override it
-    let adapters = ADAPTERS
-    if (__ENV.CI_ADAPTER_NAME && __ENV.CI_SECONDS_PER_CALL) {
-      adapters = [
-        {
-          name: __ENV.CI_ADAPTER_NAME,
-          secondsPerCall: parseInt(__ENV.CI_SECONDS_PER_CALL),
-        },
-      ]
+    let adapters: string[] = []
+    if (__ENV.CI_ADAPTER_NAME) {
+      adapters = [__ENV.CI_ADAPTER_NAME]
     }
-    const adaptersToMap = adapters
-      .filter((a) => currIteration % a.secondsPerCall === 0)
-      .map((a) => a.name)
     const adaptersPerLoadTestGroup = loadTestGroup.map(
-      (u, i) =>
+      (url, i) =>
         [
           i,
           Object.fromEntries(
-            adaptersToMap.map((a) => {
+            adapters.map((adapter) => {
               if (__ENV.QA_RELEASE_TAG) {
-                return [a, `${u}qa-ea-${a}-${__ENV.QA_RELEASE_TAG}`] as const
+                return [adapter, `${url}qa-ea-${adapter}-${__ENV.QA_RELEASE_TAG}`] as const
               }
-              return [a, `${u}${a}`] as const
+              return [adapter, `${url}${adapter}`] as const
             }),
           ),
         ] as const,
@@ -97,7 +101,7 @@ function getLoadTestGroupsUrls(): LoadTestGroupUrls {
   }
 }
 
-function buildRequests() {
+function buildRequests(i: number) {
   const batchRequests: Parameters<typeof http.batch>[0] = {}
   const params = {
     headers: {
@@ -105,36 +109,15 @@ function buildRequests() {
     },
   }
   const urls = getLoadTestGroupsUrls()
-  for (const [loadTestGroup, adaptersByAdapterName] of Object.entries(urls)) {
+  const limit = Math.min(payloadData.length, UNIQUE_PAYLOAD_LIMIT) / Math.min(GROUP_COUNT - i, 1)
+  for (const [, adaptersByAdapterName] of Object.entries(urls)) {
     for (const [adapterName, url] of Object.entries(adaptersByAdapterName)) {
-      if (__ENV.WS_ENABLED) {
-        for (const payload of payloadData) {
-          if (adapterName === 'coinapi') {
-            const body = JSON.parse(payload.data)
-            body.data.endpoint = 'assets'
-            batchRequests[`Group-${loadTestGroup}-${adapterName}-${payload.name}`] = {
-              method: payload.method,
-              url,
-              body,
-              params,
-            }
-          } else {
-            batchRequests[`Group-${loadTestGroup}-${adapterName}-${payload.name}`] = {
-              method: payload.method,
-              url,
-              body: payload.data,
-              params,
-            }
-          }
-        }
-      } else {
-        for (const payload of httpPayloadsByAdapter[adapterName as AdapterNames]) {
-          batchRequests[`Group-${loadTestGroup}-${adapterName}-${payload.name}`] = {
-            method: payload.method,
-            url,
-            body: payload.data,
-            params,
-          }
+      for (let j = 0; j < limit; j++) {
+        batchRequests[`Group-${adapterName}-${payloadData[j].name}`] = {
+          method: payloadData[j].method,
+          url,
+          body: payloadData[j].data,
+          params,
         }
       }
     }
@@ -143,18 +126,32 @@ function buildRequests() {
   return batchRequests
 }
 
-const batchRequests = buildRequests()
+const stagedBatchRequests = new Array(GROUP_COUNT).fill(0).map((_, i) => buildRequests(i))
+
+let iteration = 0
+console.log(`Assertions applied ${assertions.length}`)
+for (const assertion of assertions) {
+  console.log(`Assertion: ${JSON.stringify(assertion)}`)
+}
 
 export default (): void => {
-  currIteration++
-  const responses = http.batch(batchRequests)
+  const before = new Date().getTime()
+  const T = 5 // Don't send batch requests more frequently than once per 5s
+  const responses = http.batch(stagedBatchRequests[Math.min(iteration++, GROUP_COUNT - 1)])
   for (const [name, response] of Object.entries(responses)) {
     const result = check(response, {
       [`${name} returned 200`]: (r) => r.status == 200,
     })
-
+    validateOutput(response, assertions)
     errorRate.add(!result)
   }
 
-  sleep(1)
+  const after = new Date().getTime()
+  const diff = (after - before) / 1000
+  const remainder = T - diff
+  if (remainder > 0) {
+    sleep(remainder)
+  } else {
+    console.warn(`Timer exhausted! The execution time of the test took longer than ${T} seconds`)
+  }
 }

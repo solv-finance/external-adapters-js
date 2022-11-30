@@ -1,14 +1,14 @@
 import { Decimal } from 'decimal.js'
 import moment from 'moment'
-import { CurrencyDerivativesData, OptionData } from '../../src/derivativesDataProvider'
-import { SigmaCalculator } from '../../src/sigmaCalculator'
+import { CurrencyDerivativesData, OptionData } from '../../src/utils/derivativesDataProvider'
+import { SigmaCalculator } from '../../src/utils/sigmaCalculator'
 
 describe('sigma calculator', () => {
   describe('data handling', () => {
     it('sorts strikes prices correctly', () => {
       const fixture1: CurrencyDerivativesData = {
-        e1: moment(),
-        e2: moment(),
+        e1: moment().unix(),
+        e2: moment().unix(),
         callsE1: [_createOptionWithStrike(500, 'C'), _createOptionWithStrike(400, 'C')],
         callsE2: [_createOptionWithStrike(500, 'C'), _createOptionWithStrike(400, 'C')],
         putsE1: [_createOptionWithStrike(400, 'P'), _createOptionWithStrike(500, 'P')],

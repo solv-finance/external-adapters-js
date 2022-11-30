@@ -1,4 +1,4 @@
-import { Requester, Validator, Builder } from '@chainlink/ea-bootstrap'
+import { Requester, Validator, Builder, IncludePair, util } from '@chainlink/ea-bootstrap'
 import {
   Config,
   ExecuteWithConfig,
@@ -6,22 +6,36 @@ import {
   MakeWSHandler,
   AdapterRequest,
   APIEndpoint,
-} from '@chainlink/types'
+} from '@chainlink/ea-bootstrap'
 import { makeConfig } from './config'
 import * as endpoints from './endpoint'
+import { NAME as AdapterName } from './config'
+import { TInputParameters } from './endpoint'
+import includes from './config/includes.json'
 
-export const execute: ExecuteWithConfig<Config> = async (request, context, config) => {
-  return Builder.buildSelector(request, context, config, endpoints)
+export const execute: ExecuteWithConfig<Config, endpoints.TInputParameters> = async (
+  request,
+  context,
+  config,
+) => {
+  return Builder.buildSelector<Config, endpoints.TInputParameters>(
+    request,
+    context,
+    config,
+    endpoints,
+  )
 }
 
-export const endpointSelector = (request: AdapterRequest): APIEndpoint =>
-  Builder.selectEndpoint(request, makeConfig(), endpoints)
+export const endpointSelector = (
+  request: AdapterRequest,
+): APIEndpoint<Config, endpoints.TInputParameters> =>
+  Builder.selectEndpoint<Config, endpoints.TInputParameters>(request, makeConfig(), endpoints)
 
-export const makeExecute: ExecuteFactory<Config> = (config) => {
+export const makeExecute: ExecuteFactory<Config, endpoints.TInputParameters> = (config) => {
   return async (request, context) => execute(request, context, config || makeConfig())
 }
 
-interface Message {
+interface CryptoMessage {
   timestamp: string
   ccy?: string
   type?: string
@@ -33,88 +47,128 @@ interface Message {
   mid?: number
 }
 
-export const makeWSHandler = (config?: Config): MakeWSHandler => {
-  const getPair = (input: AdapterRequest) => {
-    const validator = new Validator(
-      input,
-      endpoints.crypto.inputParameters,
-      {},
-      { shouldThrowError: false },
-    )
-    if (validator.error) return
-    const base = validator.validated.data.base.toUpperCase()
-    const quote = validator.validated.data.quote.toUpperCase()
-    const endpoint = input.data.endpoint
-    return endpoints.forex.supportedEndpoints.indexOf(endpoint) !== -1
-      ? `${base}${quote}`
-      : `${base}/${quote}`
+interface ForexMessage {
+  [pair: string]: { price: number; timestamp: string }
+}
+
+type Message = CryptoMessage | ForexMessage
+
+export type TOptions = {
+  from: string
+  to: string
+  inverse: boolean
+}
+
+interface Pair {
+  pair: string
+  inverse: boolean
+}
+
+const getIncludesOptions = (
+  _validator: Validator<TInputParameters>,
+  include: IncludePair,
+): TOptions | undefined => {
+  return {
+    from: include.from,
+    to: include.to,
+    inverse: include.inverse || false,
   }
+}
+
+const getPair = (input: AdapterRequest): Pair => {
+  const validator = new Validator(
+    input,
+    endpoints.crypto.inputParameters,
+    {},
+    { includes, shouldThrowError: false },
+  )
+  if (validator.error) return { inverse: false, pair: '' }
+  const endpoint = input.data.endpoint
+
+  const { from, to, inverse } = util.getPairOptions<TOptions, TInputParameters>(
+    AdapterName,
+    validator,
+    getIncludesOptions,
+    (base: string, quote: string) => ({
+      from: base,
+      to: quote,
+      inverse: false,
+    }),
+  ) as TOptions
+
+  return {
+    inverse,
+    pair:
+      !!endpoint && endpoints.forex.supportedEndpoints.indexOf(endpoint) !== -1
+        ? `${from}${to}`
+        : `${from}/${to}`,
+  }
+}
+
+export const makeWSHandler = (config?: Config): MakeWSHandler<Message | any> => {
   const getSubscription = (request: 'subscribe' | 'unsubscribe', pair?: string) => {
-    if (!pair) return
+    if (!pair) return ''
     return { request, ccy: pair }
   }
 
-  const isForexEndpoint = (endpoint: string) =>
-    endpoints.forex.supportedEndpoints.indexOf(endpoint) !== -1
-  const getPairFieldFromNCFXResponse = (endpoint: string) =>
-    isForexEndpoint(endpoint) ? 'ccy' : 'currencyPair'
+  const isForexEndpoint = (endpoint: string | undefined) =>
+    !!endpoint && endpoints.forex.supportedEndpoints.indexOf(endpoint) !== -1
 
   return () => {
     const defaultConfig = config || makeConfig()
     return {
       connection: {
-        getUrl: async (input: AdapterRequest) => {
+        getUrl: async (input: any) => {
           const endpoint = input.data.endpoint
           if (isForexEndpoint(endpoint)) {
-            return `${defaultConfig.adapterSpecificParams?.forexDefaultBaseWSUrl}/spotdata`
+            return `${defaultConfig.adapterSpecificParams?.forexDefaultBaseWSUrl}`
           }
-          return `${defaultConfig.api.baseWebsocketURL}/cryptodata`
+          return `${defaultConfig.ws?.baseWsURL}/cryptodata`
+        },
+        protocol: {
+          headers: {
+            ...defaultConfig.api?.headers,
+            ncfxauth: defaultConfig.adapterSpecificParams?.forexEncodedCreds,
+          },
         },
       },
       noHttp: true,
-      subscribe: (input) => getSubscription('subscribe', getPair(input)),
-      unsubscribe: (input) => getSubscription('unsubscribe', getPair(input)),
-      subsFromMessage: (message: Message[], subscriptionMsg, input) => {
+      subscribe: (input: AdapterRequest) => getSubscription('subscribe', getPair(input).pair),
+      unsubscribe: (input: AdapterRequest) => getSubscription('unsubscribe', getPair(input).pair),
+      subsFromMessage: (message: Message, subscriptionMsg: any, input: AdapterRequest) => {
         if (Array.isArray(message) && message.length > 0) {
-          const pairField = getPairFieldFromNCFXResponse(input.data.endpoint)
-          const pairMessage = message.find((m) => m[pairField] === subscriptionMsg.ccy)
-          if (!pairMessage) return
+          const pairMessage = message.find((m) => m.currencyPair === subscriptionMsg.ccy)
+          if (!pairMessage) return ''
           return getSubscription('subscribe', `${pairMessage.currencyPair || pairMessage.ccy}`)
         }
-        return getSubscription('subscribe', `${message}`)
+        return getSubscription('subscribe', getPair(input).pair)
       },
-      isError: (message: { TYPE: string }) =>
-        Number(message.TYPE) > 400 && Number(message.TYPE) < 900,
-      filter: (message: Message[]) => {
-        return Array.isArray(message) && message.length > 0
-      },
-      toResponse: (message: Message[], input: AdapterRequest) => {
-        const pair = getPair(input)
-        const pairMessage = message.find(
-          (m) => m[getPairFieldFromNCFXResponse(input.data.endpoint)] === pair,
-        )
+      isError: (message: Message) => Number(message.type) > 400 && Number(message.type) < 900,
+      filter: (message: Message) =>
+        (Array.isArray(message) && message.length > 0) || Object.keys(message).length > 0,
+      toResponse: (message: Message, input: AdapterRequest) => {
+        const { pair, inverse } = getPair(input)
+        const pairMessage = Array.isArray(message)
+          ? message.find((m: Message) => m.currencyPair === pair)
+          : (message as ForexMessage)[pair]
+
         if (!pairMessage) {
           throw new Error(`${pair} not found in message`)
         }
         const endpoint = input.data.endpoint
-        const resultField = isForexEndpoint(endpoint) ? 'rate' : 'mid'
-        const result = Requester.validateResultNumber(pairMessage, [resultField])
+        const resultField = isForexEndpoint(endpoint) ? 'price' : 'mid'
+        const result = Requester.validateResultNumber(pairMessage, [resultField], { inverse })
         return Requester.success('1', { data: { ...pairMessage, result } }, defaultConfig.verbose)
       },
       onConnect: (input: AdapterRequest) => {
         const endpoint = input.data.endpoint
-        const username = isForexEndpoint(endpoint)
-          ? defaultConfig.adapterSpecificParams?.forexWSUsername
-          : defaultConfig.api.auth.username
-        const password = isForexEndpoint(endpoint)
-          ? defaultConfig.adapterSpecificParams?.forexWSPassword
-          : defaultConfig.api.auth.password
+        if (isForexEndpoint(endpoint)) return ''
         return {
           request: 'login',
-          username,
-          password,
+          username: defaultConfig.api?.auth?.username,
+          password: defaultConfig.api?.auth?.password,
         }
       },
-    }
+    } as any
   }
 }

@@ -1,11 +1,12 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import {
+import { Requester, Validator, CacheKey } from '@chainlink/ea-bootstrap'
+import type {
   ExecuteWithConfig,
   Config,
   InputParameters,
   AdapterRequest,
   AxiosResponse,
-} from '@chainlink/types'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
 import { NAME as AdapterName } from '../config'
 
 export const supportedEndpoints = ['latest']
@@ -14,7 +15,8 @@ export const batchablePropertyPath = [{ name: 'quote' }]
 export const description =
   'Returns a batched price comparison from one currency to a list of other currencies.'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string; quote: string | string[] }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     required: true,
     aliases: ['from', 'coin'],
@@ -45,17 +47,24 @@ const handleBatchedRequest = (
   resultPath: string,
   symbols: string[],
 ) => {
-  const payload: [AdapterRequest, number][] = []
+  const payload: AdapterBatchResponse = []
   const base = response.data.base.toUpperCase()
+
   for (const symbol of symbols) {
+    const individualRequest = {
+      ...request,
+      data: { ...request.data, base, quote: symbol.toUpperCase() },
+    }
+
+    const result = Requester.validateResultNumber(response.data, [resultPath, symbol])
+
     payload.push([
-      {
-        ...request,
-        data: { ...request.data, base, quote: symbol.toUpperCase() },
-      },
-      Requester.validateResultNumber(response.data, [resultPath, symbol]),
+      CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+      individualRequest,
+      result,
     ])
   }
+
   return Requester.success(
     jobRunID,
     Requester.withResult(response, undefined, payload),
@@ -68,7 +77,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const validator = new Validator(request, inputParameters)
 
   const jobRunID = validator.validated.id
-  const base = validator.overrideSymbol(AdapterName)
+  const base = validator.overrideSymbol(AdapterName, validator.validated.data.base)
   const to = validator.validated.data.quote
   const url = `latest`
 

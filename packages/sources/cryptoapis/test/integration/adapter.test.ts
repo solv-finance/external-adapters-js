@@ -1,35 +1,23 @@
-import { AdapterRequest } from '@chainlink/types'
-import request, { SuperTest, Test } from 'supertest'
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import * as process from 'process'
 import { server as startServer } from '../../src'
-import * as nock from 'nock'
-import * as http from 'http'
 import { mockBalanceResponse, mockBcInfoResponse, mockCryptoResponse } from './fixtures'
-import { AddressInfo } from 'net'
+import { setupExternalAdapterTest } from '@chainlink/ea-test-helpers'
+import type { SuiteContext } from '@chainlink/ea-test-helpers'
+import { SuperTest, Test } from 'supertest'
 
 describe('execute', () => {
-  let server: http.Server
-  let req: SuperTest<Test>
+  const context: SuiteContext = {
+    req: null,
+    server: startServer,
+  }
 
-  beforeAll(async () => {
-    process.env.CACHE_ENABLED = 'false'
-    process.env.API_KEY = process.env.API_KEY || 'fake-api-key'
-    if (process.env.RECORD) {
-      nock.recorder.rec()
-    }
-    server = await startServer()
-    req = request(`localhost:${(server.address() as AddressInfo).port}`)
-  })
-  afterAll((done) => {
-    if (process.env.RECORD) {
-      nock.recorder.play()
-    }
+  const envVariables = {
+    CACHE_ENABLED: 'false',
+    API_KEY: process.env.API_KEY || 'fake-api-key',
+  }
 
-    nock.restore()
-    nock.cleanAll()
-    nock.enableNetConnect()
-    server.close(done)
-  })
+  setupExternalAdapterTest(envVariables, context)
 
   describe('balance endpoint', () => {
     const balanceRequest: AdapterRequest = {
@@ -49,7 +37,7 @@ describe('execute', () => {
     it('should return success', async () => {
       mockBalanceResponse()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(balanceRequest)
         .set('Accept', '*/*')
@@ -72,7 +60,7 @@ describe('execute', () => {
     it('should return success', async () => {
       mockBcInfoResponse()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(bcInfoRequest)
         .set('Accept', '*/*')
@@ -95,7 +83,7 @@ describe('execute', () => {
     it('should return success', async () => {
       mockCryptoResponse()
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(cryptoRequest)
         .set('Accept', '*/*')

@@ -1,16 +1,20 @@
 import process from 'process'
 import nock from 'nock'
-import http from 'http'
-import { server as startServer } from '../../src'
 import { DEV_BASE_URL } from '../../src/config'
 import { locationTests } from './location'
 import { currentConditionsTests } from './current-conditions'
 import { locationCurrentConditionsTests } from './location-current-conditions'
+import { server as startServer } from '../../src'
+import request, { SuperTest, Test } from 'supertest'
+import { AddressInfo } from 'net'
+import { setEnvVariables } from '@chainlink/ea-test-helpers'
+import { FastifyInstance } from '@chainlink/ea-bootstrap'
 
 let oldEnv: NodeJS.ProcessEnv
 
 export interface SuiteContext {
-  server: http.Server
+  fastify: FastifyInstance | null
+  req: SuperTest<Test> | null
 }
 
 beforeAll(() => {
@@ -25,7 +29,7 @@ beforeAll(() => {
 })
 
 afterAll(() => {
-  process.env = oldEnv
+  setEnvVariables(oldEnv)
   if (process.env.RECORD) {
     nock.recorder.play()
   }
@@ -36,15 +40,17 @@ afterAll(() => {
 
 describe('execute', () => {
   const context: SuiteContext = {
-    server: null,
+    fastify: null,
+    req: null,
   }
 
-  beforeAll(async () => {
-    context.server = await startServer()
+  beforeEach(async () => {
+    context.fastify = await startServer()
+    context.req = request(`localhost:${(context.fastify.server.address() as AddressInfo).port}`)
   })
 
-  afterAll((done) => {
-    context.server.close(done)
+  afterEach((done) => {
+    ;(context.fastify as FastifyInstance).close(done)
   })
 
   describe('location endpoint', () => locationTests(context))

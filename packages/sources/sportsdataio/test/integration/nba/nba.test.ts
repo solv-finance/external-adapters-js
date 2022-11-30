@@ -1,49 +1,26 @@
-import { AdapterRequest } from '@chainlink/types'
-import request from 'supertest'
+import { AdapterRequest } from '@chainlink/ea-bootstrap'
 import process from 'process'
-import nock from 'nock'
-import http from 'http'
 import { server as startServer } from '../../../src'
 import { mockSportsDataProviderResponse } from './fixtures'
-
-let oldEnv: NodeJS.ProcessEnv
+import { setupExternalAdapterTest } from '@chainlink/ea-test-helpers'
+import type { SuiteContext } from '@chainlink/ea-test-helpers'
+import { SuperTest, Test } from 'supertest'
 
 const MOCK_KEY = 'mock-key'
 
-beforeAll(() => {
-  oldEnv = JSON.parse(JSON.stringify(process.env))
-  process.env.NBA_API_KEY = process.env.NBA_API_KEY || MOCK_KEY
-  process.env.API_VERBOSE = 'true'
-
-  if (process.env.RECORD) {
-    nock.recorder.rec()
-  }
-})
-
-afterAll(() => {
-  process.env = oldEnv
-  if (process.env.RECORD) {
-    nock.recorder.play()
-  }
-
-  nock.restore()
-  nock.cleanAll()
-  nock.enableNetConnect()
-})
-
 describe('execute', () => {
   const id = '1'
-  let server: http.Server
-  let req: SuperTest<Test>
+  const context: SuiteContext = {
+    req: null,
+    server: startServer,
+  }
 
-  beforeAll(async () => {
-    server = await startServer()
-    req = request(`localhost:${(server.address() as AddressInfo).port}`)
-  })
+  const envVariables = {
+    NBA_API_KEY: process.env.NBA_API_KEY || MOCK_KEY,
+    API_VERBOSE: 'true',
+  }
 
-  afterAll((done) => {
-    server.close(done)
-  })
+  setupExternalAdapterTest(envVariables, context)
 
   describe('fetch nba player data', () => {
     mockSportsDataProviderResponse(MOCK_KEY)
@@ -59,7 +36,7 @@ describe('execute', () => {
         },
       }
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')
@@ -79,7 +56,7 @@ describe('execute', () => {
         },
       }
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')
@@ -99,7 +76,7 @@ describe('execute', () => {
         },
       }
 
-      const response = await req
+      const response = await (context.req as SuperTest<Test>)
         .post('/')
         .send(data)
         .set('Accept', '*/*')

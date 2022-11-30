@@ -1,18 +1,24 @@
-import { AdapterRequest, AdapterContext, Execute } from '@chainlink/types'
+import type {
+  AdapterRequest,
+  AdapterContext,
+  Execute,
+  AdapterRequestWithRateLimit,
+} from '../../src/types'
 import { createStore, Store } from 'redux'
 import { useFakeTimers } from 'sinon'
 import * as rateLimit from '../../src/lib/middleware/rate-limit'
-import { Config, get } from '../../src/lib/middleware/rate-limit/config'
+import { Config, get } from '../../src/lib/config/provider-limits/config'
 import {
   IntervalNames,
   Intervals,
   selectParticiantsHeartbeatsFor,
   selectTotalNumberOfHeartbeatsFor,
 } from '../../src/lib/middleware/rate-limit/reducer'
+import { Limits } from '../../src/lib/config/provider-limits'
 
 const counterFrom =
-  (i = 0): Execute =>
-  async (request) => {
+  (i = 0) =>
+  async (request: AdapterRequest) => {
     const result = i++
     return {
       jobRunID: request.id,
@@ -23,15 +29,20 @@ const counterFrom =
   }
 
 const expectRequestToBe =
-  (field: string, expected: any): Execute =>
-  async (request) => {
-    expect(request[field]).toBe(expected)
-    return {
-      jobRunID: request.id,
-      data: { jobRunID: request.id, statusCode: 200, data: request, result: '' },
-      result: '',
-      statusCode: 200,
-    }
+  (field: string, expected: number): Execute<AdapterRequestWithRateLimit, AdapterContext> =>
+  (input) => {
+    return new Promise((resolve) => {
+      expect(input[field as keyof AdapterRequestWithRateLimit]).toBe(expected)
+      resolve({
+        jobRunID: input.id,
+        data: {
+          statusCode: 200,
+          result: 1,
+        },
+        result: 1,
+        statusCode: 200,
+      })
+    })
   }
 
 const getMaxAge = (config: Config, store: Store, input: AdapterRequest) => {
@@ -47,17 +58,40 @@ const getMaxAge = (config: Config, store: Store, input: AdapterRequest) => {
   return rateLimit.maxAgeFor(maxThroughput, Intervals[IntervalNames.MINUTE])
 }
 
+const mockLimits = {
+  http: {
+    free: {
+      rateLimit1s: 10,
+      rateLimit1m: 50,
+      note: '1s found in ToS, 1m found at https://www.coingecko.com/en/api',
+    },
+    analyst: {
+      rateLimit1m: 500,
+      rateLimit1h: 690,
+    },
+    chainlink: {
+      rateLimit1m: 500,
+      rateLimit1h: 4166,
+    },
+    pro: {
+      rateLimit1m: 500,
+      rateLimit1h: 6900,
+    },
+  },
+  ws: {},
+}
+
 describe('Rate Limit Middleware', () => {
   const capacity = 50
   const context: AdapterContext = {}
 
-  let oldEnv
+  let oldEnv: NodeJS.ProcessEnv
 
   beforeAll(() => {
     process.env.RATE_LIMIT_ENABLED = String(true)
     process.env.RATE_LIMIT_CAPACITY = String(capacity)
     process.env.RATE_LIMIT_API_PROVIDER = 'coingecko'
-    context.rateLimit = get({})
+    context.limits = get({ limits: {} as Limits, name: '' }, {})
   })
 
   beforeEach(() => {
@@ -72,7 +106,7 @@ describe('Rate Limit Middleware', () => {
     it('it uses the lowest tier if RATE_LIMIT_CAPACITY_SEC and RATE_LIMIT_CAPACITY_M are not set', () => {
       const coingeckoLowestRatePerSec = 10
       const coingeckoLowestRatePerMin = 50
-      const config = get({ name: 'coingecko' })
+      const config = get({ name: 'coingecko', limits: mockLimits }, {})
       expect(config.burstCapacity1s).toEqual(coingeckoLowestRatePerSec)
       expect(config.burstCapacity1m).toEqual(coingeckoLowestRatePerMin)
       expect(config.totalCapacity).toEqual(capacity)
@@ -80,28 +114,28 @@ describe('Rate Limit Middleware', () => {
 
     it('sets the burstCapacity1s and capacity to 0 if RATE_LIMIT_CAPACITY_SECOND is set to 0', () => {
       process.env.RATE_LIMIT_CAPACITY_SECOND = '0'
-      const config = get({ name: 'coingecko' })
+      const config = get({ name: 'coingecko', limits: mockLimits }, {})
       expect(config.burstCapacity1s).toBe(0)
       expect(config.totalCapacity).toBe(capacity)
     })
 
     it('sets the burstCapacity1s and capacity to 0 if RATE_LIMIT_CAPACITY_MINUTE is set to 0', () => {
       process.env.RATE_LIMIT_CAPACITY_MINUTE = '0'
-      const config = get({ name: 'coingecko' })
+      const config = get({ name: 'coingecko', limits: mockLimits }, {})
       expect(config.burstCapacity1m).toBe(0)
       expect(config.totalCapacity).toBe(capacity)
     })
 
     it('sets the burstCapacity1s and capacity to 0 if RATE_LIMIT_CAPACITY_SECOND is set to less than 0', () => {
       process.env.RATE_LIMIT_CAPACITY_SECOND = '-1'
-      const config = get({ name: 'coingecko' })
+      const config = get({ name: 'coingecko', limits: mockLimits }, {})
       expect(config.burstCapacity1s).toBe(0)
       expect(config.totalCapacity).toBe(capacity)
     })
 
     it('sets the burstCapacity1s and capacity to 0 if RATE_LIMIT_CAPACITY_MINUTE is set to less than 0', () => {
       process.env.RATE_LIMIT_CAPACITY_MINUTE = '-1'
-      const config = get({ name: 'coingecko' })
+      const config = get({ name: 'coingecko', limits: mockLimits }, {})
       expect(config.burstCapacity1m).toBe(0)
       expect(config.totalCapacity).toBe(capacity)
     })
@@ -122,7 +156,7 @@ describe('Rate Limit Middleware', () => {
       const input = { id: '6', data: { base: 1 } }
 
       const execute = await rateLimit.withRateLimit(store)(
-        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.rateLimit, store, input)),
+        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.limits as Config, store, input)),
         context,
       )
       await execute(input, context)
@@ -135,7 +169,7 @@ describe('Rate Limit Middleware', () => {
       for (let i = 0; i <= 5; i++) {
         const input = { id: String(i), data: { base: 1 } }
         const execute = await withRateLimit(
-          expectRequestToBe('rateLimitMaxAge', getMaxAge(context.rateLimit, store, input)),
+          expectRequestToBe('rateLimitMaxAge', getMaxAge(context.limits as Config, store, input)),
           context,
         )
         await execute(input, context)
@@ -149,7 +183,7 @@ describe('Rate Limit Middleware', () => {
       for (let i = 1; i <= 5; i++) {
         const input = { id: String(i), data: { base: i } }
         const execute = await withRateLimit(
-          expectRequestToBe('rateLimitMaxAge', getMaxAge(context.rateLimit, store, input)),
+          expectRequestToBe('rateLimitMaxAge', getMaxAge(context.limits as Config, store, input)),
           context,
         )
         await execute(input, context)
@@ -162,7 +196,7 @@ describe('Rate Limit Middleware', () => {
       await execute({ id: '1', data: { base: 1 } }, context)
 
       execute = await withRateLimit(
-        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.rateLimit, store, input)),
+        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.limits as Config, store, input)),
         context,
       )
       await execute({ id: '1', data: { base: 1 } }, context)
@@ -180,14 +214,14 @@ describe('Rate Limit Middleware', () => {
 
       const input = { id: '1', data: { base: 11 } }
       let execute = await withRateLimit(
-        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.rateLimit, store, input)),
+        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.limits as Config, store, input)),
         context,
       )
       await execute(input, context)
 
       const input2 = { id: '1', data: { base: uniquePair } }
       execute = await withRateLimit(
-        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.rateLimit, store, input2)),
+        expectRequestToBe('rateLimitMaxAge', getMaxAge(context.limits as Config, store, input2)),
         context,
       )
       await execute(input2, context)

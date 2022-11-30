@@ -1,5 +1,5 @@
-import { Requester, Validator, AdapterError } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, Config, InputParameters } from '@chainlink/types'
+import { Requester, Validator, util, AdapterInputError } from '@chainlink/ea-bootstrap'
+import type { ExecuteWithConfig, Config, InputParameters } from '@chainlink/ea-bootstrap'
 
 export const supportedEndpoints = ['us']
 
@@ -7,7 +7,8 @@ export const endpointResultPaths = {
   us: 'death',
 }
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { date: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   date: {
     description: 'The date to query formatted by `[YEAR][MONTH][DAY]` (e.g. `20201012`)',
   },
@@ -69,15 +70,15 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 
   const jobRunID = validator.validated.id
   const date = validator.validated.data.date
-  const resultPath = validator.validated.data.resultPath
+  const resultPath = (validator.validated.data.resultPath || '').toString()
   if (!validDate(date))
-    throw new AdapterError({
+    throw new AdapterInputError({
       jobRunID,
       message: 'Invalid date format',
       statusCode: 400,
     })
   const suffix = date ? 'daily' : 'current'
-  const url = `us/${suffix}.json`
+  const url = util.buildUrlPath('us/:suffix.json', { suffix })
 
   const options = {
     ...config.api,
@@ -87,9 +88,9 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const response = await Requester.request<ResponseSchema[]>(options)
   const day = findDay(response.data, date)
   if (!day)
-    throw new AdapterError({
+    throw new AdapterInputError({
       jobRunID,
-      message: 'Date not found in response data',
+      message: `Date ${date} not found in response data`,
       statusCode: 400,
     })
   const result = Requester.validateResultNumber(day, [resultPath])

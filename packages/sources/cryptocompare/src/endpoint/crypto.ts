@@ -1,12 +1,14 @@
-import { Logger, Requester, Validator } from '@chainlink/ea-bootstrap'
-import {
+import { Logger, Requester, Validator, CacheKey } from '@chainlink/ea-bootstrap'
+import type {
   ExecuteWithConfig,
   Config,
   AxiosResponse,
   AdapterRequest,
   InputParameters,
-} from '@chainlink/types'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
 import { NAME as AdapterName } from '../config'
+import overrides from '../config/symbols.json'
 
 export const supportedEndpoints = ['crypto', 'price', 'marketcap', 'volume']
 export const batchablePropertyPath = [
@@ -128,7 +130,8 @@ export interface ResponseSchema {
 export const description =
   '**NOTE: the `price` endpoint is temporarily still supported, however, is being deprecated. Please use the `crypto` endpoint instead.**'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string | string[]; quote: string | string[] }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'coin', 'fsym'],
     description: 'The symbol of the currency to query',
@@ -143,12 +146,12 @@ export const inputParameters: InputParameters = {
 
 const handleBatchedRequest = (
   jobRunID: string,
-  request: AdapterRequest,
-  response: AxiosResponse<ResponseSchema[]>,
-  validator: Validator,
+  request: AdapterRequest<TInputParameters>,
+  response: AxiosResponse<ResponseSchema>,
+  validator: Validator<TInputParameters>,
   resultPath: string,
 ) => {
-  const payload: [AdapterRequest, number][] = []
+  const payload: AdapterBatchResponse = []
   for (const base of request.data.base) {
     const baseWithOverride = (validator.overrideSymbol(AdapterName, base) as string)?.toUpperCase()
     // Skip if the response does not contain the base
@@ -162,12 +165,24 @@ const handleBatchedRequest = (
         Logger.warn(`${resultPath} not found in batch response data's ${baseWithOverride}.${quote}`)
         continue
       }
+
+      const individualRequest = {
+        ...request,
+        data: { ...request.data, base: base.toUpperCase(), quote: quote.toUpperCase() },
+      }
+
+      const result = Requester.validateResultNumber(response.data, [
+        'RAW',
+        baseWithOverride,
+        quote,
+        resultPath,
+      ])
+
       payload.push([
-        {
-          ...request,
-          data: { ...request.data, base: base.toUpperCase(), quote: quote.toUpperCase() },
-        },
-        Requester.validateResultNumber(response.data, ['RAW', baseWithOverride, quote, resultPath]),
+        CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+
+        individualRequest,
+        result,
       ])
     }
   }
@@ -180,13 +195,16 @@ const handleBatchedRequest = (
 }
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { overrides })
 
   const jobRunID = validator.validated.id
   const url = `/data/pricemultifull`
-  const symbol = validator.overrideSymbol(AdapterName)
+  const symbol = validator.overrideSymbol<string | string[]>(
+    AdapterName,
+    validator.validated.data.base,
+  )
   const quote = validator.validated.data.quote
-  const resultPath = validator.validated.data.resultPath
+  const resultPath = (validator.validated.data.resultPath || '').toString()
 
   const params = {
     fsyms: (Array.isArray(symbol)
@@ -208,7 +226,13 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const response = await Requester.request<ResponseSchema>(options)
 
   if (Array.isArray(symbol) || Array.isArray(quote))
-    return handleBatchedRequest(jobRunID, request, response, validator, resultPath)
+    return handleBatchedRequest(
+      jobRunID,
+      request as AdapterRequest<TInputParameters>,
+      response as AxiosResponse<ResponseSchema>,
+      validator,
+      resultPath,
+    )
 
   const result = Requester.validateResultNumber(response.data, [
     'RAW',

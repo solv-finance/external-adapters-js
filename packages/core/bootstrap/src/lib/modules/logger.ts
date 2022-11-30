@@ -1,9 +1,7 @@
 import { uuid } from '../util'
 import pino from 'pino'
-import { wsRedactPaths } from '../middleware/ws/config'
 import { cloneDeep } from 'lodash'
-
-export const paths = [...wsRedactPaths]
+import { CensorList, CensorKeyValue, redactPaths } from '../config/logging'
 
 const sensitiveKeys = [
   /cookie/i,
@@ -13,9 +11,10 @@ const sensitiveKeys = [
   /secret/i,
   /token/i,
   /api[-._]?key/i,
+  /client/i,
 ]
 
-export const censor = (v: string) => {
+export const censor = (v: string): string => {
   try {
     const url = new URL(v)
     url.searchParams.forEach((_, name) => {
@@ -31,7 +30,7 @@ export const censor = (v: string) => {
 }
 
 export const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL ?? 'info',
   prettyPrint: process.env.NODE_ENV === 'development',
   prettifier: require('pino-pretty'),
   formatters: {
@@ -43,21 +42,42 @@ export const logger = pino({
     logMethod(inputArgs, method) {
       // flipping the order of inputs (switching from winston to pino)
       const length = inputArgs.length
-      const arg1 = inputArgs.shift()
+      let argsList
       if (length >= 2) {
+        const arg1 = inputArgs.shift()
         // if input includes message string + data object
         const arg2 = cloneDeep(inputArgs.shift())
 
         // add instanceId if not present
         if (typeof arg2 === 'object' && !arg2.instanceId) arg2.instanceId = uuid()
 
-        return method.apply(this, [arg2, arg1, ...inputArgs])
+        argsList = [arg2, arg1, ...inputArgs]
+      } else {
+        argsList = inputArgs
       }
-      return method.apply(this, [arg1, ...inputArgs])
+      return method.apply(
+        this,
+        argsList.map((arg) => censorLog(arg, CensorList.getAll())) as [string, ...unknown[]],
+      )
     },
   },
   redact: {
-    paths,
+    paths: redactPaths,
     censor,
   },
 })
+
+export function censorLog(obj: unknown, censorList: CensorKeyValue[]): unknown {
+  let stringified = ''
+  try {
+    // JSON.stringify(obj) will fail if obj contains a circular reference.
+    // If it fails, we fall back to replacing it with "[Unknown]".
+    stringified = JSON.stringify(obj)
+  } catch (e) {
+    return '[Unknown]'
+  }
+  censorList.forEach((entry) => {
+    stringified = stringified.replace(entry.value, `[${entry.key} REDACTED]`)
+  })
+  return JSON.parse(stringified)
+}

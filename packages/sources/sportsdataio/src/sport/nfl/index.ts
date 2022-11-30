@@ -1,19 +1,18 @@
-import { AdapterError, Validator } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteFactory, ExecuteWithConfig } from '@chainlink/types'
+import { AdapterInputError, InputParameters, Validator } from '@chainlink/ea-bootstrap'
+import { Config, ExecuteFactory, ExecuteWithConfig } from '@chainlink/ea-bootstrap'
 import { makeConfig } from '../../config'
 import { currentSeason, schedule, scores, teams } from './endpoint'
 
 export const NAME = 'nfl'
 
-const inputParams = {
-  endpoint: true,
-}
+export type TInputParameters = Record<string, never>
+export const inputParams: InputParameters<TInputParameters> = {}
 
 export const execute: ExecuteWithConfig<Config> = async (request, context, config) => {
   const validator = new Validator(request, inputParams)
 
   const jobRunID = validator.validated.id
-  const endpoint = validator.validated.data.endpoint
+  const endpoint = validator.validated.data.endpoint || ''
 
   switch (endpoint.toLowerCase()) {
     case currentSeason.NAME: {
@@ -29,7 +28,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, context, confi
       return await teams.execute(request, context, config)
     }
     default: {
-      throw new AdapterError({
+      throw new AdapterInputError({
         jobRunID,
         message: `Endpoint ${endpoint} not supported.`,
         statusCode: 400,
@@ -38,6 +37,6 @@ export const execute: ExecuteWithConfig<Config> = async (request, context, confi
   }
 }
 
-export const makeExecute: ExecuteFactory<Config> = (config) => {
+export const makeExecute: ExecuteFactory<Config, TInputParameters> = (config) => {
   return async (request, context) => execute(request, context, config || makeConfig())
 }

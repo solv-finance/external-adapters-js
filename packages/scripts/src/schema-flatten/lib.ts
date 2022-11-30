@@ -1,12 +1,14 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { writeFileSync } from 'fs'
-import * as Parser from 'json-schema-ref-parser'
+import $RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import * as path from 'path'
 import { snakeCase } from 'snake-case'
 import { getWorkspacePackages } from '../workspace'
 import { collisionPackageTypeMap, forceRenameMap, getCollisionIgnoreMapFrom } from './config'
+import { BaseSettings } from '@chainlink/external-adapter-framework/config'
+import process from 'process'
+import { Adapter } from '@chainlink/external-adapter-framework/adapter'
 
-export async function writeAllFlattenedSchemas() {
+export async function writeAllFlattenedSchemas(): Promise<void> {
   const data = await flattenAllSchemas()
   data.forEach(({ location, schema }) => {
     writeFileSync(location, JSON.stringify(schema))
@@ -15,7 +17,7 @@ export async function writeAllFlattenedSchemas() {
 
 export interface FlattenedSchema {
   location: string
-  schema: any
+  schema: Record<string, unknown>
 }
 
 /**
@@ -39,16 +41,39 @@ export async function flattenAllSchemas(): Promise<FlattenedSchema[]> {
       .filter((p) => p.type !== 'core')
       .map(async (p) => {
         const { environment, location } = p
-        if (!environment) {
+        let schema: JSONSchema = {}
+
+        //If we encounter a framework version flag for framework, merge framework.BaseSettings and adapter.CustomSettings into JSONSchema.properties
+        if (p.framework === '3') {
+          const { adapter } = (await import(
+            path.join(process.cwd(), p.location, 'dist', 'index.js')
+          )) as { adapter: Adapter }
+          const reduced: { [key: string]: any } = {}
+          const props = { ...BaseSettings, ...adapter.customSettings }
+          Object.entries(props).forEach(([key, value]) => {
+            reduced[key] = {
+              type: value.type,
+              description: value.description,
+              default: 'default' in value ? value.default : undefined,
+              options: value.type === 'enum' ? value.options : undefined,
+            }
+          })
+          schema = {
+            ...schema,
+            $id: 'https://external-adapters.chainlinklabs.com/schemas/framework.json',
+            type: 'object',
+            properties: reduced,
+          }
+        } else if (environment) {
+          //Environment is undefined in v3, but should never be undefined in v2
+          schema = await new $RefParser().dereference(environment.$id, {
+            resolve,
+          })
+        } else {
           return
         }
 
-        const schema = await Parser.default.dereference(environment.$id, {
-          resolve,
-        })
-
         const collisionIgnoreMap = getCollisionIgnoreMapFrom(bootstrapPackage)
-
         try {
           return {
             schema: flattenAllOf(
@@ -60,8 +85,9 @@ export async function flattenAllSchemas(): Promise<FlattenedSchema[]> {
             ),
             location,
           }
-        } catch (e) {
-          throw Error(`Errors incurred while processing package:${location}: ${e.message}`)
+        } catch (e: any) {
+          const error = e as Error
+          throw Error(`Errors incurred while processing package:${location}: ${error.message}`)
         }
       }),
   )
@@ -90,7 +116,7 @@ function createChainlinkLabsResolver() {
     return prev
   }, {})
 
-  const resolver: Parser.ResolverOptions = {
+  const resolver: $RefParser.ResolverOptions = {
     order: 1,
     canRead: /^https:\/\/external-adapters.chainlinklabs.com/i,
     read: (file, callback) => {

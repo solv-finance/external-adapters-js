@@ -1,9 +1,15 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, Config, AdapterRequest, InputParameters } from '@chainlink/types'
+import { Requester, util, Validator, Overrider } from '@chainlink/ea-bootstrap'
+import type {
+  ExecuteWithConfig,
+  Config,
+  AdapterRequest,
+  InputParameters,
+} from '@chainlink/ea-bootstrap'
 import { NAME as AdapterName } from '../config'
-import { getCoinIds, getSymbolToId } from '../util'
+import { getCoinIds } from '../util'
+import internalOverrides from '../config/overrides.json'
 
-export const supportedEndpoints = []
+export const supportedEndpoints = ['crypto-single']
 
 const buildPath =
   (path: string) =>
@@ -11,16 +17,15 @@ const buildPath =
     const validator = new Validator(request, inputParameters)
 
     const quote = validator.validated.data.quote
-    return `quotes.${quote.toUpperCase()}.${path}`
+    return `quotes.${quote?.toString().toUpperCase()}.${path}`
   }
 
 export const endpointResultPaths = {
-  crypto: buildPath('price'),
-  price: buildPath('price'),
-  marketcap: buildPath('market_cap'),
+  'crypto-single': buildPath('price'),
 }
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string; quote: string; coinid: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     aliases: ['from', 'coin'],
     description: 'The symbol of the currency to query',
@@ -78,18 +83,33 @@ export const execute: ExecuteWithConfig<Config> = async (request, context, confi
   const validator = new Validator(request, inputParameters)
 
   const jobRunID = validator.validated.id
-  const symbol = validator.overrideSymbol(AdapterName) as string
+  const base = validator.validated.data.base
   const quote = validator.validated.data.quote
   const coinid = validator.validated.data.coinid as string | undefined
 
-  // If coinid was provided or base was overridden, that symbol will be fetched
-  let coin = coinid || (symbol !== validator.validated.data.base && symbol)
+  let coin = coinid
   if (!coin) {
-    const coinIds = await getCoinIds(context, jobRunID)
-    coin = getSymbolToId(symbol, coinIds)
+    const overrider = new Overrider(
+      internalOverrides,
+      request.data?.overrides,
+      AdapterName,
+      jobRunID,
+    )
+    const [overriddenCoin, remainingSym] = overrider.performOverrides(base)
+    if (remainingSym.length === 0) {
+      coin = overriddenCoin[base]
+    } else {
+      const coinsResponse = await getCoinIds(context, jobRunID)
+      const requestedCoin = Overrider.convertRemainingSymbolsToIds(
+        overriddenCoin,
+        remainingSym,
+        coinsResponse,
+      )
+      coin = requestedCoin[base]
+    }
   }
 
-  const url = `v1/tickers/${coin.toLowerCase()}`
+  const url = util.buildUrlPath('v1/tickers/:coin', { coin: coin.toLowerCase() })
   const resultPath = validator.validated.data.resultPath
 
   const params = {

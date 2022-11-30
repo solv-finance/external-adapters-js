@@ -1,6 +1,5 @@
-import { AdapterRequest } from '@chainlink/types'
+import type { AdapterData, AdapterRequest } from '../../../src/types'
 import * as util from '../../../src/lib/metrics/util'
-import * as crypto from 'crypto'
 
 describe('Bootstrap/Metrics Utils', () => {
   describe('Get Feed ID', () => {
@@ -77,6 +76,16 @@ describe('Bootstrap/Metrics Utils', () => {
       expect(feedName).toMatchInlineSnapshot(`"{\\"data\\":{}}"`)
     })
 
+    it(`Removes 'result' from stringified JSON`, () => {
+      const input = {
+        id: '',
+        data: { base: 'LINK' },
+        result: 123,
+      }
+      const feedName = util.getFeedId(input)
+      expect(feedName).toMatchInlineSnapshot(`"{\\"data\\":{\\"base\\":\\"LINK\\"}}"`)
+    })
+
     it(`Does not throw error if pricefeed parameters are missing`, () => {
       const input: AdapterRequest = {
         id: '',
@@ -122,6 +131,27 @@ describe('Bootstrap/Metrics Utils', () => {
       }
       const feedName = util.getFeedId(input)
       expect(feedName).toBe('CACHE_WARMER')
+    })
+
+    it(`Returns input as JSON string when validation fails`, () => {
+      const input: AdapterRequest = {
+        id: '1',
+        data: {
+          base: '',
+          quote: '',
+        },
+      }
+      const feedName = util.getFeedId(input)
+      expect(feedName).toBe('{"id":"1","data":{"base":"","quote":""}}')
+    })
+
+    it(`Returns 'undefined' when an error is caught`, () => {
+      const input: AdapterRequest = {
+        id: '1',
+        data: undefined as unknown as AdapterData,
+      }
+      const feedName = util.getFeedId(input)
+      expect(feedName).toBe('undefined')
     })
   })
 })

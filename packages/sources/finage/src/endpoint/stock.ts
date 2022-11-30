@@ -1,12 +1,14 @@
-import {
+import type {
   AdapterRequest,
   AxiosResponse,
   Config,
   ExecuteWithConfig,
   InputParameters,
-} from '@chainlink/types'
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
+  AdapterBatchResponse,
+} from '@chainlink/ea-bootstrap'
+import { Requester, util, Validator, CacheKey } from '@chainlink/ea-bootstrap'
 import { NAME } from '../config'
+import overrides from '../config/symbols.json'
 
 export const supportedEndpoints = ['stock']
 export const batchablePropertyPath = [{ name: 'base' }]
@@ -14,7 +16,8 @@ export const batchablePropertyPath = [{ name: 'base' }]
 export const description = `https://finage.co.uk/docs/api/stock-last-quote
 The result will be calculated as the midpoint between the ask and the bid.`
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { base: string | string[] }
+export const inputParameters: InputParameters<TInputParameters> = {
   base: {
     required: true,
     aliases: ['from', 'symbol'],
@@ -32,17 +35,18 @@ export interface ResponseSchema {
 }
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
-  const validator = new Validator(request, inputParameters)
+  const validator = new Validator(request, inputParameters, {}, { overrides })
 
   const jobRunID = validator.validated.id
   const base = validator.validated.data.base
   const symbol = Array.isArray(base)
     ? base.map((symbol) => symbol.toUpperCase()).join(',')
-    : (validator.overrideSymbol(NAME) as string).toUpperCase()
+    : validator.overrideSymbol(NAME, base).toUpperCase()
 
   const url = getStockURL(base, symbol)
   const params = {
     apikey: config.apiKey,
+    ...(Array.isArray(base) ? { symbols: symbol } : null),
   }
 
   const options = {
@@ -51,9 +55,15 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
     params,
   }
 
-  const response = await Requester.request<ResponseSchema>(options)
+  const response = await Requester.request<ResponseSchema | ResponseSchema[]>(options)
+
   if (Array.isArray(base)) {
-    return handleBatchedRequest(jobRunID, request, response, validator)
+    return handleBatchedRequest(
+      jobRunID,
+      request,
+      response as AxiosResponse<ResponseSchema[]>,
+      validator,
+    )
   }
 
   const result = Requester.validateResultNumber(response.data, ['bid'])
@@ -62,18 +72,20 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 
 const getStockURL = (base: string | string[], symbol: string) => {
   if (Array.isArray(base)) {
-    return `/last/stocks/?symbols=${symbol}`
+    return util.buildUrlPath('/last/stocks')
   }
-  return `/last/stock/${symbol}`
+  return util.buildUrlPath('/last/stock/:symbol', { symbol })
 }
 
+// TODO: check this
 const handleBatchedRequest = (
   jobRunID: string,
   request: AdapterRequest,
-  response: AxiosResponse<ResponseSchema>,
-  validator: Validator,
+  response: AxiosResponse<ResponseSchema[]>,
+  validator: Validator<TInputParameters>,
 ) => {
-  const payload: [AdapterRequest, number][] = []
+  const payload: AdapterBatchResponse = []
+
   for (const base in response.data) {
     const symbol = validator.overrideReverseLookup(NAME, 'overrides', response.data[base].symbol)
 
@@ -81,17 +93,25 @@ const handleBatchedRequest = (
     const bid = Requester.validateResultNumber(response.data, [base, 'bid'])
     const result = (ask + bid) / 2
 
-    payload.push([
-      {
-        ...request,
-        data: {
-          ...request.data,
-          base: symbol.toUpperCase(),
-        },
+    const individualRequest = {
+      ...request,
+      data: {
+        ...request.data,
+        base: symbol.toUpperCase(),
       },
+    }
+
+    payload.push([
+      CacheKey.getCacheKey(individualRequest, Object.keys(inputParameters)),
+      individualRequest,
       result,
     ])
   }
-  response.data.result = payload
-  return Requester.success(jobRunID, response)
+
+  return Requester.success(
+    jobRunID,
+    Requester.withResult(response, undefined, payload),
+    true,
+    batchablePropertyPath,
+  )
 }

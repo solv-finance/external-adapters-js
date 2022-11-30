@@ -1,10 +1,11 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import { AdapterInputError, Requester, util, Validator } from '@chainlink/ea-bootstrap'
+import { Config, ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { DEFAULT_BASE_URL } from '../config'
 
 export const supportedEndpoints = ['assetAttestation']
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { asset: string }
+export const inputParameters: InputParameters<TInputParameters> = {
   asset: {
     required: true,
     description: 'The symbol of the currency to query',
@@ -19,7 +20,8 @@ type Attestation = {
   verified: boolean
 }
 
-const getAttestationURI = (asset: string) => `/asset-attestations/${asset.toUpperCase()}`
+const getAttestationURI = (asset: string) =>
+  util.buildUrlPath('/asset-attestations/:asset', { asset: asset.toUpperCase() })
 
 export const execute: ExecuteWithConfig<Config> = async (input, _, config) => {
   const validator = new Validator(input, inputParameters)
@@ -27,7 +29,12 @@ export const execute: ExecuteWithConfig<Config> = async (input, _, config) => {
   const asset = validator.validated.data.asset
   const jobRunID = validator.validated.id
 
-  if (!asset) throw Error('asset must be provided')
+  if (!asset)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `'asset' input param must be provided`,
+    })
 
   const url = getAttestationURI(asset)
   const reqConfig = { ...config.api, baseURL: DEFAULT_BASE_URL, url }

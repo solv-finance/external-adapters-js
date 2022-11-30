@@ -1,7 +1,7 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import { AdapterConfigError, Requester, Validator } from '@chainlink/ea-bootstrap'
+import { ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { Config } from '../config'
-import { PorInputAddress } from '@chainlink/proof-of-reserves-adapter/src/PorInputAddress'
+import { PorInputAddress } from '@chainlink/proof-of-reserves-adapter/src/utils/PorInputAddress'
 
 export const supportedEndpoints = ['addresses']
 
@@ -19,17 +19,22 @@ type Address = {
 }
 
 type AddressType = 'custodial' | 'merchant' | 'deposit'
-export const inputParameters: InputParameters = {}
+export type TInputParameters = Record<string, never>
+export const inputParameters: InputParameters<TInputParameters> = {}
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
-  const validator = new Validator(request)
+  const validator = new Validator(request, inputParameters)
 
   Requester.logConfig(config)
 
   const jobRunID = validator.validated.id
 
   if (!config.addressesEndpoint) {
-    throw new Error('The address list endpoint has not been configured for this adapter')
+    throw new AdapterConfigError({
+      jobRunID,
+      statusCode: 500,
+      message: 'The address list endpoint has not been configured for this adapter',
+    })
   }
 
   const options = { ...config.api, baseURL: config.addressesEndpoint }

@@ -1,66 +1,115 @@
-import { AdapterContext, Execute, Middleware } from '@chainlink/types'
-import express from 'express'
-import http from 'http'
-import slowDown from 'express-slow-down'
-import rateLimit from 'express-rate-limit'
+import type {
+  AdapterContext,
+  Execute,
+  Middleware,
+  AdapterRequest,
+  AdapterData,
+  EnvDefaultOverrides,
+} from '../types'
+import Fastify, { FastifyInstance } from 'fastify'
 import { join } from 'path'
 import * as client from 'prom-client'
-import { executeSync, storeSlice, withMiddleware } from '../index'
+import { executeSync, store, withMiddleware } from '../index'
 import { defaultOptions } from './middleware/cache'
 import { loadTestPayload } from './config/test-payload-loader'
+import { logger } from './modules/logger'
+import { METRICS_ENABLED, setupMetrics } from './metrics'
+import { get as getRateLimitConfig } from './config/provider-limits/config'
 import {
-  HTTP_ERROR_UNSUPPORTED_MEDIA_TYPE,
-  HTTP_ERROR_UNSUPPORTED_MEDIA_TYPE_MESSAGE,
-} from './errors'
-import { logger } from './modules'
-import { METRICS_ENABLED, httpRateLimit, setupMetrics } from './metrics'
-import { get as getRateLimitConfig } from './middleware/rate-limit/config'
-import { toObjectWithNumbers } from './util'
-import { warmupShutdown } from './middleware/cache-warmer/actions'
-import { AddressInfo } from 'net'
+  buildCensorList,
+  envVarValidations,
+  getClientIp,
+  getEnv,
+  logEnvVarWarnings,
+  parseBool,
+  toObjectWithNumbers,
+} from './util'
+import { Limits } from './config/provider-limits'
+import process from 'process'
+import { serverShutdown } from './store'
 
-const app = express()
-const version = process.env.npm_package_version
-const port = process.env.EA_PORT || 8080
-const baseUrl = process.env.BASE_URL || '/'
+const version = getEnv('npm_package_version')
+const port = parseInt(getEnv('EA_PORT') as string)
+const baseUrl = getEnv('BASE_URL') as string
+const eaHost = getEnv('EA_HOST') as string
+const maxPayloadSize = parseInt(getEnv('MAX_PAYLOAD_SIZE_LIMIT') as string)
 
 export const HEADER_CONTENT_TYPE = 'Content-Type'
 export const CONTENT_TYPE_APPLICATION_JSON = 'application/json'
 export const CONTENT_TYPE_TEXT_PLAIN = 'text/plain'
 
 export const initHandler =
-  (name: string, execute: Execute, middleware: Middleware[]) => async (): Promise<http.Server> => {
-    const context: AdapterContext = {
-      name,
-      cache: null,
-      rateLimit: getRateLimitConfig({ name }),
+  <D extends AdapterData>(
+    adapterContext: AdapterContext,
+    execute: Execute<AdapterRequest<D>>,
+    middleware: Middleware<AdapterRequest<D>>[],
+  ) =>
+  async (): Promise<FastifyInstance> => {
+    const name = adapterContext.name || ''
+    const envDefaultOverrides = adapterContext.envDefaultOverrides || {}
+    for (const key in envDefaultOverrides) {
+      if (!process.env[key] && envDefaultOverrides[key as keyof EnvDefaultOverrides]) {
+        process.env[key] = envDefaultOverrides[key as keyof EnvDefaultOverrides]
+      }
     }
-    const cacheOptions = defaultOptions()
+
+    // Validate env vars and fail startup if conditions not met
+    envVarValidations()
+
+    const app = Fastify({
+      trustProxy: true,
+      logger: false,
+      bodyLimit: maxPayloadSize,
+    })
+
+    const rateLimit: Limits = adapterContext.rateLimit || { http: {}, ws: {} }
+    let context: AdapterContext = {
+      name,
+      cache: undefined,
+      envDefaultOverrides,
+      rateLimit,
+      limits: getRateLimitConfig(
+        {
+          limits: rateLimit,
+          name,
+        },
+        adapterContext,
+      ),
+    }
+    const cacheOptions = defaultOptions(undefined, context)
     if (cacheOptions.enabled) {
       cacheOptions.instance = await cacheOptions.cacheBuilder(cacheOptions.cacheImplOptions)
       context.cache = cacheOptions
     }
 
+    // Build list of env var values to censor in logs
+    buildCensorList()
+
+    // Log warnings based on env vars
+    logEnvVarWarnings()
+
     if (METRICS_ENABLED) {
       setupMetricsServer(name)
     }
 
-    initExpressMiddleware(app)
+    const executeWithMiddleware = await withMiddleware<D>(execute, context, middleware)
 
-    const executeWithMiddleware = await withMiddleware(execute, context, middleware)
-
-    app.post(baseUrl, (req, res) => {
-      if (!req.is(CONTENT_TYPE_APPLICATION_JSON)) {
-        return res
-          .status(HTTP_ERROR_UNSUPPORTED_MEDIA_TYPE)
-          .send(HTTP_ERROR_UNSUPPORTED_MEDIA_TYPE_MESSAGE)
-      }
+    app.post<{
+      Body: AdapterRequest<D>
+    }>(baseUrl, async (req, res) => {
       req.body.data = {
         ...(req.body.data || {}),
-        ...toObjectWithNumbers(req.query),
+        ...toObjectWithNumbers(req.query as Record<string, unknown>),
       }
+
+      context = {
+        ...context,
+        ip: getClientIp(req),
+        host: req.hostname,
+      }
+
       return executeSync(req.body, executeWithMiddleware, context, (status, result) => {
-        res.status(status).json(result)
+        res.code(status).send(result)
       })
     })
 
@@ -78,7 +127,7 @@ export const initHandler =
       res.status(200).send({ message: 'OK', version })
     })
 
-    const testPayload = loadTestPayload()
+    const testPayload = loadTestPayload<D>()
     app.get(join(baseUrl, 'smoke'), async (_, res) => {
       if (testPayload.isDefault) {
         return res.status(200).send('OK')
@@ -88,7 +137,7 @@ export const initHandler =
 
       for (const index in testPayload.requests) {
         try {
-          await executeSync(
+          await executeSync<D>(
             { data: testPayload.requests[index], id: index },
             executeWithMiddleware,
             context,
@@ -96,7 +145,7 @@ export const initHandler =
               if (status === 400) errors.push(result)
             },
           )
-        } catch (e) {
+        } catch (e: any) {
           errors.push(e)
         }
       }
@@ -110,23 +159,26 @@ export const initHandler =
       process.exit()
     })
 
-    return new Promise((resolve) => {
-      const server = app.listen(port, () => {
-        server.on('close', () => {
-          storeSlice('cacheWarmer').dispatch(warmupShutdown())
-          context.cache?.instance?.close()
-        })
+    app.addHook('onClose', async () => {
+      store.dispatch(serverShutdown())
+      context.cache?.instance?.close()
+    })
 
-        logger.info(`Listening on port ${(server.address() as AddressInfo).port}!`)
-        resolve(server)
+    return new Promise((resolve) => {
+      app.listen(port, eaHost, (_, address) => {
+        logger.info(`Server listening on ${address}`)
+        resolve(app)
       })
     })
   }
 
 function setupMetricsServer(name: string) {
-  const metricsApp = express()
-  const metricsPort = process.env.METRICS_PORT || 9080
-  const endpoint = process.env.METRICS_USE_BASE_URL ? join(baseUrl, 'metrics') : '/metrics'
+  const metricsApp = Fastify({
+    logger: false,
+  })
+  const metricsPort = parseInt(getEnv('METRICS_PORT') as string)
+  const endpoint = parseBool(getEnv('METRICS_USE_BASE_URL')) ? join(baseUrl, 'metrics') : '/metrics'
+  logger.info(`Metrics endpoint: http://${eaHost}:${metricsPort}${endpoint}`)
 
   setupMetrics(name)
 
@@ -135,39 +187,5 @@ function setupMetricsServer(name: string) {
     res.send(await client.register.metrics())
   })
 
-  metricsApp.listen(metricsPort, () => logger.info(`Monitoring listening on port ${metricsPort}!`))
-}
-
-const windowMs = 1000 * 5
-const max = parseInt(process.env.SERVER_RATE_LIMIT_MAX || '250') // default to 250 req / 5 seconds max
-const delayAfter = max * (Number(process.env.SERVER_SLOW_DOWN_AFTER_FACTOR) || 0.8) // we start slowing down requests when we reach 80% of our max limit for the current interval
-const delayMs = parseInt(process.env.SERVER_SLOW_DOWN_DELAY_MS || '500') // default to slowing down each request by 500ms
-
-function initExpressMiddleware(app: express.Express) {
-  app.set('trust proxy', 1)
-
-  const rateLimiter = rateLimit({
-    windowMs,
-    max, // limit each IP's requests per windowMs
-    keyGenerator: () => '*', // use one key for all incoming requests
-    handler: ((req, res, next) => {
-      if (req.url === '/health') {
-        next()
-      } else {
-        httpRateLimit.inc()
-        res.status(429).send('Too many requests, please try again later.')
-      }
-    }) as express.RequestHandler,
-  })
-  app.use(rateLimiter)
-
-  const speedLimiter = slowDown({
-    windowMs,
-    delayAfter,
-    delayMs,
-    keyGenerator: () => '*', // use one key for all incoming requests
-  })
-  app.use(speedLimiter)
-
-  app.use(express.json({ limit: '1mb' }))
+  metricsApp.listen(metricsPort, eaHost)
 }

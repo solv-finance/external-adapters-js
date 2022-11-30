@@ -1,4 +1,4 @@
-import { AdapterRequest, Execute } from '@chainlink/types'
+import { AdapterRequest, Execute } from '@chainlink/ea-bootstrap'
 import { makeExecute } from '../../src'
 import { ethers } from 'ethers'
 
@@ -6,8 +6,8 @@ jest.mock('ethers', () => ({
   ...jest.requireActual('ethers'),
   ethers: {
     providers: {
-      JsonRpcProvider: function (_: string): ethers.providers.JsonRpcProvider {
-        return {}
+      JsonRpcProvider: function (): ethers.providers.JsonRpcProvider {
+        return {} as ethers.providers.JsonRpcProvider
       },
     },
     Contract: function () {
@@ -27,7 +27,7 @@ describe('alpine', () => {
   let execute: Execute
 
   beforeAll(async () => {
-    execute = makeExecute()
+    execute = makeExecute() as Execute
   })
 
   describe('tvl', () => {

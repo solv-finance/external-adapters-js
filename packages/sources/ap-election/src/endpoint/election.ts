@@ -1,5 +1,16 @@
-import { AdapterError, Requester, Validator } from '@chainlink/ea-bootstrap'
-import { AdapterRequest, Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  AdapterInputError,
+  AdapterResponseInvalidError,
+  Requester,
+  util,
+  Validator,
+} from '@chainlink/ea-bootstrap'
+import type {
+  AdapterRequest,
+  Config,
+  ExecuteWithConfig,
+  InputParameters,
+} from '@chainlink/ea-bootstrap'
 import { utils } from 'ethers'
 
 export const supportedEndpoints = ['election']
@@ -60,7 +71,16 @@ export const description = `This endpoint fetches the results from an election a
 - Adapter only accepts a single state postal code
 - Adapter will only return races where a winner has already been declared.`
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = {
+  date: string
+  statePostal: string
+  officeID: string
+  raceID: string
+  raceType: string
+  resultsType: string
+}
+
+export const inputParameters: InputParameters<TInputParameters> = {
   date: {
     description: 'The date of the election formatted as YYYY-MM-DD',
     required: true,
@@ -102,7 +122,7 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const jobRunID = validator.validated.id
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { raceType, date, resultsType, endpoint, ...rest } = validator.validated.data
-  const url = `/elections/${date}`
+  const url = util.buildUrlPath(`/elections/:date`, { date })
 
   const params = {
     ...rest,
@@ -140,17 +160,17 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 }
 
 const validateRequest = (request: AdapterRequest) => {
-  const { statePostal, officeID, raceID } = request.data
-  const statePostals = statePostal.split(',')
+  const { statePostal = '', officeID, raceID } = request.data
+  const statePostals = statePostal.toString().split(',')
   if (statePostals.length > 1) {
-    throw new AdapterError({
+    throw new AdapterInputError({
       jobRunID: request.id,
       statusCode: 400,
       message: 'Adapter only supports finding results from a single state',
     })
   }
   if (!officeID && !raceID) {
-    throw new AdapterError({
+    throw new AdapterInputError({
       jobRunID: request.id,
       statusCode: 400,
       message: 'Either officeID or raceID must be present',
@@ -161,10 +181,12 @@ const validateRequest = (request: AdapterRequest) => {
 const validateResponse = (response: ResponseSchema) => {
   const races = response.races
   if (races.length === 0) {
-    throw Error('We could not find any races')
+    throw new AdapterResponseInvalidError({ message: 'We could not find any races' })
   }
   if (races.length > 1) {
-    throw Error("We don't support finding the winner from multiple races")
+    throw new AdapterResponseInvalidError({
+      message: "We don't support finding the winner from multiple races",
+    })
   }
 }
 
@@ -173,7 +195,7 @@ const getReportingUnit = (reportingUnits: ReportingUnit[], statePostal: string):
   const level = statePostal === 'US' ? 'national' : 'state'
   const reportingUnit = reportingUnits.find((ru) => ru.level === level)
   if (!reportingUnit) {
-    throw Error('Cannot find reporting unit')
+    throw new AdapterResponseInvalidError({ message: 'Cannot find reporting unit' })
   }
   return reportingUnit
 }
@@ -184,7 +206,7 @@ const getReportingUnitWinner = (reportingUnit: ReportingUnit): Candidate => {
       return candidate
     }
   }
-  throw Error('Candidate not found')
+  throw new AdapterResponseInvalidError({ message: 'Candidate not found' })
 }
 
 const concatenateName = (candidate: Candidate): string => `${candidate.voteCount},${candidate.last}`

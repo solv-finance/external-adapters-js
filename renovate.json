@@ -2,14 +2,15 @@
   "extends": [
     "config:base",
     ":automergePatch",
-    ":prConcurrentLimit10",
     ":automergeLinters",
     ":automergeTesters",
     ":automergeTypes",
     "preview:dockerCompose",
     "preview:dockerVersions",
     ":automergePr",
-    ":automergeRequireAllStatusChecks"
+    ":automergeRequireAllStatusChecks",
+    "schedule:weekends"
   ],
-  "ignorePaths": [".yarn/sdks"]
+  "ignorePaths": [".yarn/sdks"],
+  "prConcurrentLimit": 5
 }

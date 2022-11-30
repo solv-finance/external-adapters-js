@@ -1,5 +1,5 @@
-import { Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import { AdapterDataProviderError, util, Requester, Validator } from '@chainlink/ea-bootstrap'
+import { ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { Config, DEFAULT_NETWORK, ETH } from '../config'
 import stagingAbi from '../abi/stagingContract.json'
 import { ethers } from 'ethers'
@@ -8,7 +8,9 @@ export const supportedEndpoints = ['lastblock']
 
 export const description = 'This gets the lastblock of a cross chain transfer from the given chain.'
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { stagingAddress: string; network: string }
+
+export const inputParameters: InputParameters<TInputParameters> = {
   stagingAddress: {
     required: true,
     description: 'The address of the staging contract',
@@ -30,15 +32,27 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const { network, stagingAddress } = validator.validated.data
 
   const rpcUrl = network.toUpperCase() == ETH ? config.ethereumRpcUrl : config.polygonRpcUrl
-  const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
+  const chainId = network.toUpperCase() == ETH ? config.ethereumChainId : config.polygonChainId
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl, chainId)
 
   const stagingContract = new ethers.Contract(stagingAddress, stagingAbi, provider)
-  const result = (await stagingContract.lastBlock()).toString()
+  let result
+  try {
+    result = (await stagingContract.lastBlock()).toString()
+  } catch (e: any) {
+    throw new AdapterDataProviderError({
+      network,
+      message: util.mapRPCErrorMessage(e?.code, e?.message),
+      cause: e,
+    })
+  }
 
-  return {
+  const endpointResponse = {
     jobRunID,
     result,
     data: { result },
     statusCode: 200,
   }
+
+  return Requester.success(jobRunID, endpointResponse, config.verbose)
 }

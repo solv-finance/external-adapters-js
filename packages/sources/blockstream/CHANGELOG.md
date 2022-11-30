@@ -1,271 +1,216 @@
 # @chainlink/blockstream-adapter
 
-## 1.2.13
+## 1.4.24
 
 ### Patch Changes
 
-- Updated dependencies [eecdac90b]
-  - @chainlink/ea-bootstrap@1.11.0
-  - @chainlink/ea-test-helpers@1.1.0
+- Updated dependencies [e8576df4e]
+- Updated dependencies [842651f93]
+  - @chainlink/ea-bootstrap@2.24.0
+  - @chainlink/ea-test-helpers@1.4.1
 
-## 1.2.12
-
-### Patch Changes
-
-- Updated dependencies [57be274ff]
-- Updated dependencies [540e563a9]
-- Updated dependencies [72f96124d]
-  - @chainlink/ea-bootstrap@1.10.6
-  - @chainlink/ea-test-helpers@1.1.0
-
-## 1.2.11
+## 1.4.23
 
 ### Patch Changes
 
-- Updated dependencies [4865d3b46]
-  - @chainlink/ea-bootstrap@1.10.5
-  - @chainlink/ea-test-helpers@1.0.1
+- Updated dependencies [13eb04f5a]
+- Updated dependencies [221ab1e5f]
+  - @chainlink/ea-bootstrap@2.23.0
+  - @chainlink/ea-test-helpers@1.4.1
 
-## 1.2.10
-
-### Patch Changes
-
-- Updated dependencies [4d6b8a050]
-  - @chainlink/ea-bootstrap@1.10.4
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.2.9
+## 1.4.22
 
 ### Patch Changes
 
-- Updated dependencies
-  - @chainlink/ea-bootstrap@1.10.3
-  - @chainlink/ea-test-helpers@1.0.1
+- Updated dependencies [572b89314]
+- Updated dependencies [068dd3672]
+  - @chainlink/ea-bootstrap@2.22.2
+  - @chainlink/ea-test-helpers@1.4.1
 
-## 1.2.8
-
-### Patch Changes
-
-- Updated dependencies [452ba71f0]
-  - @chainlink/ea-bootstrap@1.10.2
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.2.7
+## 1.4.21
 
 ### Patch Changes
 
-- Updated dependencies [4476ff385]
-  - @chainlink/ea-bootstrap@1.10.1
-  - @chainlink/ea-test-helpers@1.0.1
+- Updated dependencies [26b046b1e]
+  - @chainlink/ea-bootstrap@2.22.1
+  - @chainlink/ea-test-helpers@1.4.1
 
-## 1.2.6
-
-### Patch Changes
-
-- de5d083e8: removed throw when input is invalid. Validator handles internally
-- Updated dependencies [de5d083e8]
-- Updated dependencies [de5d083e8]
-- Updated dependencies [99ed864d0]
-- Updated dependencies [de5d083e8]
-  - @chainlink/ea-bootstrap@1.10.0
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.2.5
+## 1.4.20
 
 ### Patch Changes
 
-- Updated dependencies [da1207541]
-- Updated dependencies [1b6d4f1dd]
-  - @chainlink/ea-bootstrap@1.9.1
-  - @chainlink/ea-test-helpers@1.0.1
+- Updated dependencies [b8061e1d5]
+  - @chainlink/ea-bootstrap@2.22.0
+  - @chainlink/ea-test-helpers@1.4.1
 
-## 1.2.4
-
-### Patch Changes
-
-- Updated dependencies [a74101705]
-- Updated dependencies [703b60579]
-  - @chainlink/ea-bootstrap@1.9.0
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.2.3
+## 1.4.19
 
 ### Patch Changes
 
-- 1b54ee913: Remove resultPath from all input parameter configurations
-- Updated dependencies [1b54ee913]
-  - @chainlink/ea-bootstrap@1.8.0
-  - @chainlink/ea-test-helpers@1.0.1
+- Updated dependencies [3c1a320b5]
+  - @chainlink/ea-bootstrap@2.21.0
+  - @chainlink/ea-test-helpers@1.4.1
 
-## 1.2.2
-
-### Patch Changes
-
-- Updated dependencies [dfc4545b3]
-  - @chainlink/ea-bootstrap@1.7.1
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.2.1
+## 1.4.18
 
 ### Patch Changes
 
-- Updated dependencies [85360aa9]
-  - @chainlink/ea-bootstrap@1.7.0
-  - @chainlink/ea-test-helpers@1.0.1
+- Updated dependencies [b9982adc8]
+- Updated dependencies [f710272c6]
+- Updated dependencies [991fc76af]
+  - @chainlink/ea-bootstrap@2.20.0
+  - @chainlink/ea-test-helpers@1.4.1
 
-## 1.2.0
+## 1.4.17
+
+### Patch Changes
+
+- Updated dependencies [5e7393deb]
+- Updated dependencies [5e7393deb]
+  - @chainlink/ea-bootstrap@2.19.3
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.16
+
+### Patch Changes
+
+- Updated dependencies [3a0e5aaa9]
+  - @chainlink/ea-bootstrap@2.19.2
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.15
+
+### Patch Changes
+
+- Updated dependencies [05a3f9464]
+  - @chainlink/ea-bootstrap@2.19.1
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.14
+
+### Patch Changes
+
+- Updated dependencies [5a1adab07]
+- Updated dependencies [ed54a688b]
+- Updated dependencies [530753225]
+- Updated dependencies [88fdcb137]
+  - @chainlink/ea-bootstrap@2.19.0
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.13
+
+### Patch Changes
+
+- Updated dependencies [3b7c79459]
+  - @chainlink/ea-bootstrap@2.18.2
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.12
+
+### Patch Changes
+
+- Updated dependencies [c14139f55]
+  - @chainlink/ea-bootstrap@2.18.1
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.11
+
+### Patch Changes
+
+- Updated dependencies [48730a71c]
+  - @chainlink/ea-bootstrap@2.18.0
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.10
+
+### Patch Changes
+
+- Updated dependencies [a54b4216b]
+  - @chainlink/ea-test-helpers@1.4.1
+
+## 1.4.9
+
+### Patch Changes
+
+- Updated dependencies [cf38319c3]
+  - @chainlink/ea-bootstrap@2.17.1
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.8
+
+### Patch Changes
+
+- Updated dependencies [d63612a03]
+- Updated dependencies [110f3ab5c]
+  - @chainlink/ea-bootstrap@2.17.0
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.7
+
+### Patch Changes
+
+- Updated dependencies [afaf0017e]
+  - @chainlink/ea-bootstrap@2.16.0
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies [03071f0d0]
+  - @chainlink/ea-bootstrap@2.15.1
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.5
+
+### Patch Changes
+
+- Updated dependencies [8161e1e18]
+  - @chainlink/ea-bootstrap@2.15.0
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.4
+
+### Patch Changes
+
+- Updated dependencies [2e9b730ba]
+  - @chainlink/ea-bootstrap@2.14.1
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.3
+
+### Patch Changes
+
+- Updated dependencies [0d3eda653]
+  - @chainlink/ea-bootstrap@2.14.0
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.2
+
+### Patch Changes
+
+- Updated dependencies [bff852d48]
+  - @chainlink/ea-bootstrap@2.13.0
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.1
+
+### Patch Changes
+
+- Updated dependencies [6054a7b69]
+- Updated dependencies [816b3d307]
+  - @chainlink/ea-bootstrap@2.12.0
+  - @chainlink/ea-test-helpers@1.4.0
+
+## 1.4.0
 
 ### Minor Changes
 
-- bea9f065: input parameters changed
+- fe96b484a: Replace @chainlink/types exports with @chainlink/ea-bootstrap exports
 
 ### Patch Changes
 
-- Updated dependencies [f272a595]
-- Updated dependencies [1d55bbde]
-  - @chainlink/ea-bootstrap@1.6.0
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.11
-
-### Patch Changes
-
-- Updated dependencies [9b3cd511]
-  - @chainlink/ea-bootstrap@1.5.0
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.10
-
-### Patch Changes
-
-- 2473f126: added response types for block height endpoint
-
-## 1.1.9
-
-### Patch Changes
-
-- Updated dependencies [1b015ae2]
-  - @chainlink/ea-bootstrap@1.4.0
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.8
-
-### Patch Changes
-
-- Updated dependencies [39e18f66]
-  - @chainlink/ea-bootstrap@1.3.6
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.7
-
-### Patch Changes
-
-- Updated dependencies
-  - @chainlink/ea-bootstrap@1.3.5
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.6
-
-### Patch Changes
-
-- Updated dependencies [790b2fa4]
-  - @chainlink/ea-bootstrap@1.3.4
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.5
-
-### Patch Changes
-
-- Updated dependencies [946b778c]
-  - @chainlink/ea-bootstrap@1.3.3
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.4
-
-### Patch Changes
-
-- Updated dependencies [a212f2cb2]
-- Updated dependencies
-  - @chainlink/ea-bootstrap@1.3.2
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.3
-
-### Patch Changes
-
-- Updated dependencies [9e3e1cbb6]
-- Updated dependencies [a3b352bb5]
-- Updated dependencies [97bbbfc69]
-
-  - @chainlink/ea-bootstrap@1.3.1
-  - @chainlink/ea-test-helpers@1.0.1
-
-- Updated dependencies [b78f8e06]
-- Updated dependencies [c93e5654]
-- Updated dependencies [ccff5d7f]
-  - @chainlink/ea-bootstrap@1.3.0
-
-## 1.1.2
-
-### Patch Changes
-
-- Updated dependencies [34b40ed33]
-  - @chainlink/ea-bootstrap@1.2.2
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.1
-
-### Patch Changes
-
-- Updated dependencies
-  - @chainlink/ea-bootstrap@1.2.1
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.1.0
-
-### Minor Changes
-
-- 19242855d: src export changed
-
-## 1.0.4
-
-### Patch Changes
-
-- Updated dependencies [9de168b08]
-  - @chainlink/ea-bootstrap@1.2.0
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.0.3
-
-### Patch Changes
-
-- Updated dependencies [6cddc7e33]
-- Updated dependencies [757539a82]
-- Updated dependencies [e96b85614]
-- Updated dependencies [4ad7ac890]
-- Updated dependencies [f10887669]
-  - @chainlink/ea-bootstrap@1.1.0
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.0.2
-
-### Patch Changes
-
-- ** DUMMY VERSION BUMP - Test release pipeline **
-- Updated dependencies
-  - @chainlink/ea-bootstrap@1.0.2
-  - @chainlink/ea-test-helpers@1.0.1
-
-## 1.0.1
-
-### Patch Changes
-
-- Updated dependencies
-  - @chainlink/ea-bootstrap@1.0.1
-  - @chainlink/ea-test-helpers@1.0.0
-
-## 1.0.0
-
-### Major Changes
-
-- EAv2 Release. Start of individual EA versioning.
+- Updated dependencies [fe96b484a]
+- Updated dependencies [fe96b484a]
+  - @chainlink/ea-test-helpers@1.4.0
+  - @chainlink/ea-bootstrap@2.11.0

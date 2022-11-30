@@ -1,5 +1,12 @@
-import { AdapterError, Logger, Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  AdapterConfigError,
+  AdapterDataProviderError,
+  AdapterInputError,
+  Logger,
+  Requester,
+  Validator,
+} from '@chainlink/ea-bootstrap'
+import { ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { Schema, StateQuery } from '@cardano-ogmios/client'
 import { ExtendedConfig } from '../config'
 import { BigNumber } from 'ethers'
@@ -15,7 +22,9 @@ export interface ResponseSchema {
 
 export const description = "This endpoint fetches an address's balance and outputs it in Lovelace."
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { addresses: Array<{ address: string }> }
+
+export const inputParameters: InputParameters<TInputParameters> = {
   addresses: {
     aliases: ['result'],
     description: 'An array of addresses to query balances for',
@@ -31,7 +40,7 @@ export const execute: ExecuteWithConfig<ExtendedConfig> = async (request, _, con
   const addresses = validator.validated.data.addresses
 
   if (!Array.isArray(addresses) || addresses.length === 0) {
-    throw new AdapterError({
+    throw new AdapterInputError({
       jobRunID,
       message: `Input at 'addresses' or 'result' path, must be a non-empty array.`,
       statusCode: 400,
@@ -46,7 +55,7 @@ export const execute: ExecuteWithConfig<ExtendedConfig> = async (request, _, con
     httpOgmiosURL,
   )
 
-  return {
+  const endpointResponse = {
     jobRunID,
     result,
     data: {
@@ -54,6 +63,8 @@ export const execute: ExecuteWithConfig<ExtendedConfig> = async (request, _, con
     },
     statusCode: 200,
   }
+
+  return Requester.success(jobRunID, endpointResponse, config.verbose)
 }
 
 const getOgmiosHosts = (jobRunID: string, config: ExtendedConfig): string[] => {
@@ -61,7 +72,7 @@ const getOgmiosHosts = (jobRunID: string, config: ExtendedConfig): string[] => {
   if (!wsOgmiosURL || !httpOgmiosURL) {
     const { host, port, isTLSEnabled } = config
     if (!host) {
-      throw new AdapterError({
+      throw new AdapterConfigError({
         jobRunID,
         message: "Cannot construct Ogmios URLs as 'host' environment variable not set",
         statusCode: 500,
@@ -82,7 +93,7 @@ const getAddressBalances = async (
   httpURL: string,
 ): Promise<string> => {
   const errorHandler = (error: Error) => {
-    throw new AdapterError({
+    throw new AdapterDataProviderError({
       jobRunID,
       message: `Cardano Ogmios Error Name: "${error.name}" Message: "${error.message}"`,
       statusCode: 500,

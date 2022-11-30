@@ -1,5 +1,5 @@
-import { Requester, Validator } from '@chainlink/ea-bootstrap'
-import { ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import { AdapterConfigError, Requester, Validator } from '@chainlink/ea-bootstrap'
+import { ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { Config } from '../config'
 
 export const supportedEndpoints = ['members']
@@ -32,7 +32,8 @@ type Address = {
 type AddressType = 'custodial' | 'merchant' | 'deposit'
 type ChainType = 'btc' | 'eth'
 
-export const inputParameters: InputParameters = {}
+export type TInputParameters = Record<string, never>
+export const inputParameters: InputParameters<TInputParameters> = {}
 
 export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
   const validator = new Validator(request, inputParameters)
@@ -42,7 +43,11 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
   const jobRunID = validator.validated.id
 
   if (!config.membersEndpoint) {
-    throw new Error('The member list endpoint has not been configured for this adapter')
+    throw new AdapterConfigError({
+      jobRunID,
+      statusCode: 500,
+      message: 'The member list endpoint has not been configured for this adapter',
+    })
   }
 
   const options = { ...config.api, baseURL: config.membersEndpoint }

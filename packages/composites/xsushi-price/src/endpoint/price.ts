@@ -1,5 +1,12 @@
-import { AdapterContext, ExecuteWithConfig, InputParameters } from '@chainlink/types'
-import { makeMiddleware, Validator, withMiddleware } from '@chainlink/ea-bootstrap'
+import { AdapterContext, ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
+import {
+  AdapterDataProviderError,
+  AdapterInputError,
+  makeMiddleware,
+  util,
+  Validator,
+  withMiddleware,
+} from '@chainlink/ea-bootstrap'
 import * as TA from '@chainlink/token-allocation-adapter'
 import { Config } from '../config'
 import { makeExecute } from '../adapter'
@@ -20,15 +27,23 @@ export function getRatio(context: AdapterContext, id: string): Promise<string> {
     const middleware = makeMiddleware(execute)
     withMiddleware(execute, context, middleware)
       .then((executeWithMiddleware) => {
-        executeWithMiddleware(options, context)
-          .then((value) => resolve(value.data))
+        // TODO: makeExecute return types
+        executeWithMiddleware(options as any, context)
+          .then((value) => resolve(value.data as any))
           .catch(reject)
       })
       .catch((error) => reject(error))
   })
 }
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = {
+  from: string
+  quote: string
+  source?: string
+  method?: string
+}
+
+export const inputParameters: InputParameters<TInputParameters> = {
   from: {
     required: true,
     aliases: ['base', 'coin'],
@@ -55,10 +70,14 @@ export const execute: ExecuteWithConfig<Config> = async (input, context) => {
   const _config = TA.makeConfig()
   const _execute = TA.makeExecute(_config)
 
-  const jobRunID = validator.validated.jobRunID
+  const jobRunID = validator.validated.id
   const from = validator.validated.data.from
   if (from.toUpperCase() !== 'XSUSHI') {
-    throw new Error(`Cannot convert anything other than xSUSHI: ${from}`)
+    throw new AdapterInputError({
+      jobRunID,
+      statusCode: 400,
+      message: `Cannot convert anything other than xSUSHI: ${from}`,
+    })
   }
 
   const allocations = [
@@ -69,5 +88,13 @@ export const execute: ExecuteWithConfig<Config> = async (input, context) => {
     },
   ]
 
-  return await _execute({ id: jobRunID, data: { ...input.data, allocations } }, context)
+  try {
+    return await _execute({ id: jobRunID, data: { ...input.data, allocations } }, context)
+  } catch (e: any) {
+    throw new AdapterDataProviderError({
+      network: 'ethereum',
+      message: util.mapRPCErrorMessage(e?.code, e?.message),
+      cause: e,
+    })
+  }
 }

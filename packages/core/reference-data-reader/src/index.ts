@@ -1,7 +1,6 @@
 import { ethers } from 'ethers'
-import { AggregatorInterfaceFactory } from '@chainlink/contracts/ethers/v0.6/AggregatorInterfaceFactory'
-import { AggregatorV2V3InterfaceFactory } from '@chainlink/contracts/ethers/v0.6/AggregatorV2V3InterfaceFactory'
-import { util, Logger } from '@chainlink/ea-bootstrap'
+import { util, Logger, AdapterConfigError, AdapterDataProviderError } from '@chainlink/ea-bootstrap'
+import { AggregatorV2V3Interface__factory } from '@chainlink/contracts/ethers/v0.6/factories/AggregatorV2V3Interface__factory'
 import { BigNumber } from 'ethers/utils'
 
 export interface RoundData {
@@ -12,34 +11,57 @@ export interface RoundData {
   answeredInRound: BigNumber
 }
 
-export type ReferenceDataPrice = (
+export type ReferenceLatestPrice = (
   network: string,
   contractAddress: string,
   multiply: number,
   meta?: Record<string, unknown>,
+  computeDecimals?: boolean,
+) => Promise<number>
+
+export type ReferenceLatestAnswer = (
+  network: string,
+  contractAddress: string,
+  multiply: number,
+  computeDecimals?: boolean,
 ) => Promise<number>
 
 export type ReferenceDataRound = (network: string, contractAddress: string) => Promise<RoundData>
 
-export const getLatestAnswer: ReferenceDataPrice = async (
+export const getLatestAnswer: ReferenceLatestPrice = async (
   network,
   contractAddress: string,
   multiply: number,
   meta?: Record<string, unknown>,
+  computeDecimals?: boolean,
 ): Promise<number> => {
-  if (!meta || !meta.latestAnswer) return getRpcLatestAnswer(network, contractAddress, multiply)
+  if (!meta || !meta.latestAnswer)
+    return getRpcLatestAnswer(network, contractAddress, multiply, computeDecimals)
 
   return (meta.latestAnswer as number) / multiply
 }
-export const getRpcLatestAnswer: ReferenceDataPrice = async (
+export const getRpcLatestAnswer: ReferenceLatestAnswer = async (
   network,
   contractAddress: string,
   multiply: number,
+  computeDecimals?: boolean,
 ): Promise<number> => {
-  const rpcUrl = getRpcUrl(network)
-  const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
-  const aggregator = AggregatorInterfaceFactory.connect(contractAddress, provider)
-  return (await aggregator.latestAnswer()).div(multiply).toNumber()
+  try {
+    const rpcUrl = getRpcUrl(network)
+    const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
+    const aggregator = AggregatorV2V3Interface__factory.connect(contractAddress, provider)
+    const decimals = computeDecimals ? await aggregator.decimals() : 0
+    return (await aggregator.latestAnswer())
+      .div(multiply)
+      .div(new BigNumber(10).pow(decimals))
+      .toNumber()
+  } catch (e: any) {
+    throw new AdapterDataProviderError({
+      network,
+      message: util.mapRPCErrorMessage(e?.code, e?.message),
+      cause: e,
+    })
+  }
 }
 
 export const getRpcLatestRound: ReferenceDataRound = async (
@@ -48,7 +70,7 @@ export const getRpcLatestRound: ReferenceDataRound = async (
 ): Promise<RoundData> => {
   const rpcUrl = getRpcUrl(network)
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl)
-  const aggregator = AggregatorV2V3InterfaceFactory.connect(contractAddress, provider)
+  const aggregator = AggregatorV2V3Interface__factory.connect(contractAddress, provider)
   return await aggregator.latestRoundData()
 }
 
@@ -66,9 +88,9 @@ export const getRpcUrl = (network: string): string => {
     return rpcURL
   }
 
-  throw new Error(
-    `Network ${network} must be configured with an environment variable ${`${network.toUpperCase()}_RPC_URL`}`,
-  )
+  throw new AdapterConfigError({
+    message: `Network ${network} must be configured with an environment variable ${`${network.toUpperCase()}_RPC_URL`}`,
+  })
 }
 
 export const isZeroAddress = (address: string): boolean => {

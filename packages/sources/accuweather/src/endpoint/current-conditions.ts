@@ -1,5 +1,17 @@
-import { AdapterError, Requester, Validator } from '@chainlink/ea-bootstrap'
-import { AxiosResponse, Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  AdapterError,
+  AdapterInputError,
+  AdapterResponseInvalidError,
+  Requester,
+  util,
+  Validator,
+} from '@chainlink/ea-bootstrap'
+import type {
+  AxiosResponse,
+  DefaultConfig,
+  ExecuteWithConfig,
+  InputParameters,
+} from '@chainlink/ea-bootstrap'
 import { utils } from 'ethers'
 
 export interface UnitCondition {
@@ -52,9 +64,59 @@ export enum Unit {
   METRIC = 'metric',
 }
 
+export const description = `Returns the current weather conditions in a location by its identifier
+
+### Data Conversions - Current Conditions Endpoint
+
+**precipitationType**
+
+Encoded as \`uint8\`
+
+| Value |       Type       |
+| :---: | :--------------: |
+|  \`0\`  | No precipitation |
+|  \`1\`  |       Rain       |
+|  \`2\`  |       Snow       |
+|  \`3\`  |       Ice        |
+|  \`4\`  |      Mixed       |
+
+**weatherIcon**
+
+Encoded as \`uint8\`. Each icon number is related with an image and a text. See [Weather Icons](https://developer.accuweather.com/weather-icons)
+
+**Decimals to integers**
+
+Applies to both \`metric\` and \`imperial\` units.
+
+|         Condition          |     Conversion      |
+| :------------------------: | :-----------------: |
+| \`precipitationPast12Hours\` | multiplied by \`100\` |
+| \`precipitationPast24Hours\` | multiplied by \`100\` |
+|  \`precipitationPastHour\`   | multiplied by \`100\` |
+|         \`pressure\`         | multiplied by \`100\` |
+|       \`temperature\`        | multiplied by \`10\`  |
+|        \`windSpeed\`         | multiplied by \`10\`  |
+
+### Measurement Units By System - Current Conditions Endpoint
+
+|         Condition          | Imperial | Metric |
+| :------------------------: | :------: | :----: |
+| \`precipitationPast12Hours\` |    mm    |   in   |
+| \`precipitationPast24Hours\` |    mm    |   in   |
+|  \`precipitationPastHour\`   |    mm    |   in   |
+|         \`pressure\`         |    mb    |  inHg  |
+|       \`temperature\`        |    C     |   F    |
+|        \`windSpeed\`         |   km/h   |  mi/h  |
+
+### Solidity types - Location Current Conditions Endpoint
+
+See [Solidity Types](#solidity-types)`
+
 export const supportedEndpoints = ['current-conditions']
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { locationKey: number; units: string; encodeResult: boolean }
+
+export const inputParameters: InputParameters<TInputParameters> = {
   locationKey: {
     required: true,
     description:
@@ -107,7 +169,7 @@ export const noCurrentConditionsResult: CurrentConditionsResult = {
 
 export const validateUnitsParameter = (jobRunID: string, units: string): void => {
   if (!Object.values(Unit).includes(units as Unit)) {
-    throw new AdapterError({
+    throw new AdapterInputError({
       jobRunID,
       message: `Invalid 'units': ${units}. Supported values are: ${Object.values(Unit).join(',')}.`,
       statusCode: 400,
@@ -124,11 +186,13 @@ export const getCurrentConditionsResult = (
   currentConditionsList: CurrentConditions[],
 ): CurrentConditionsResult => {
   if (!currentConditionsList.length)
-    throw new Error(`Current conditions not found in: ${JSON.stringify(currentConditionsList)}`)
+    throw new AdapterResponseInvalidError({
+      message: `Current conditions not found in: ${JSON.stringify(currentConditionsList)}`,
+    })
   if (currentConditionsList.length > 1)
-    throw new Error(
-      `Multiple current conditions found in: ${JSON.stringify(currentConditionsList)}`,
-    )
+    throw new AdapterResponseInvalidError({
+      message: `Multiple current conditions found in: ${JSON.stringify(currentConditionsList)}`,
+    })
 
   const system =
     unitsConditionKey.get(units) ??
@@ -211,7 +275,7 @@ export const encodeCurrentConditionsResult = (result: CurrentConditionsResult): 
   return utils.defaultAbiCoder.encode(dataTypes, dataValues)
 }
 
-export const execute: ExecuteWithConfig<Config> = async (request, _, config) => {
+export const execute: ExecuteWithConfig<DefaultConfig> = async (request, _, config) => {
   const validator = new Validator(request, inputParameters)
 
   const jobRunID = validator.validated.id
@@ -221,40 +285,47 @@ export const execute: ExecuteWithConfig<Config> = async (request, _, config) => 
 
   validateUnitsParameter(jobRunID, units)
 
-  const url = `currentconditions/v1/${locationKey}.json`
+  const url = util.buildUrlPath('currentconditions/v1/:locationKey.json', { locationKey })
   const params = {
     details: true,
     apikey: config.apiKey,
   }
 
   const options = { ...config.api, params, url }
-
   const response = await Requester.request<Array<CurrentConditions>>(options)
 
   const currentConditionsList = response.data
   if (!Array.isArray(currentConditionsList)) {
-    throw new Error(
-      `Unexpected response by location key: ${locationKey}. Expected an array but got: ${JSON.stringify(
+    throw new AdapterResponseInvalidError({
+      jobRunID,
+      statusCode: 500,
+      message: `Unexpected response by location key: ${locationKey}. Expected an array but got: ${JSON.stringify(
         currentConditionsList,
       )}.`,
-    )
+    })
   }
   let currentConditionsResult: CurrentConditionsResult
   try {
-    currentConditionsResult = getCurrentConditionsResult(units, currentConditionsList)
+    currentConditionsResult = getCurrentConditionsResult(units as Unit, currentConditionsList)
   } catch (error) {
-    throw new Error(`Unprocessable response by location key: ${locationKey}. ${error}.`)
+    throw new AdapterError({
+      jobRunID,
+      statusCode: 500,
+      message: `Unprocessable response by location key: ${locationKey}. ${error}.`,
+    })
   }
   let result: CurrentConditionsResult | string
   if (encodeResult) {
     try {
       result = encodeCurrentConditionsResult(currentConditionsResult)
     } catch (error) {
-      throw new Error(
-        `Unexpected error encoding result: '${JSON.stringify(
+      throw new AdapterError({
+        jobRunID,
+        statusCode: 500,
+        message: `Unexpected error encoding result: '${JSON.stringify(
           currentConditionsResult,
         )}' by location key: ${locationKey}. Reason: ${error}.`,
-      )
+      })
     }
   } else {
     result = currentConditionsResult

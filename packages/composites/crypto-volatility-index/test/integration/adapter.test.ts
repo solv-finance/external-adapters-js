@@ -1,4 +1,4 @@
-import { AdapterRequest, Execute } from '@chainlink/types'
+import { AdapterRequest, Execute } from '@chainlink/ea-bootstrap'
 import * as cryptoVolatilityAdapter from '../../src/index'
 import { BigNumber } from 'ethers'
 import nock from 'nock'
@@ -19,11 +19,14 @@ Date.now = () => new Date('2021-07-21T10:20:30Z').getTime()
 
 jest.mock('moment', () => {
   const moment = jest.requireActual('moment')
-  moment.weekday = () => 5
   moment.unix = (expiration?: number) =>
     expiration
       ? {
-          weekday: () => 5,
+          utc: () => {
+            return {
+              weekday: () => 5,
+            }
+          },
         }
       : moment.unix()
   return moment
@@ -67,7 +70,7 @@ describe('execute', () => {
   const id = '1'
 
   beforeAll(async () => {
-    execute = await cryptoVolatilityAdapter.execute
+    execute = (await cryptoVolatilityAdapter.makeExecute()) as Execute
   })
 
   describe('with isAdaptive true', () => {
@@ -92,7 +95,7 @@ describe('execute', () => {
     mockInstrumentsETH()
 
     it('should return success', async () => {
-      const resp = await execute(data)
+      const resp = await execute(data, {})
       expect(resp).toMatchSnapshot()
     })
   })
@@ -118,7 +121,7 @@ describe('execute', () => {
     mockInstrumentsETH()
 
     it('should return success', async () => {
-      const resp = await execute(data)
+      const resp = await execute(data, {})
       expect(resp).toMatchSnapshot()
     })
   })

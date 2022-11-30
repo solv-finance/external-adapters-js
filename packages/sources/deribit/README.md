@@ -1,35 +1,68 @@
 # Chainlink External Adapter for Deribit
 
+![1.2.24](https://img.shields.io/github/package-json/v/smartcontractkit/external-adapters-js?filename=packages/sources/deribit/package.json)
+
+Base URL https://www.deribit.com/api/v2/public/
+
+This document was generated automatically. Please see [README Generator](../../scripts#readme-generator) for more info.
+
+## Environment Variables
+
+| Required? |     Name     | Description |  Type  | Options |                 Default                  |
+| :-------: | :----------: | :---------: | :----: | :-----: | :--------------------------------------: |
+|           | API_ENDPOINT |             | string |         | `https://www.deribit.com/api/v2/public/` |
+
+---
+
+## Input Parameters
+
+Every EA supports base input parameters from [this list](../../core/bootstrap#base-input-parameters)
+
+| Required? |   Name   |     Description     |  Type  |          Options           | Default  |
+| :-------: | :------: | :-----------------: | :----: | :------------------------: | :------: |
+|           | endpoint | The endpoint to use | string | [crypto](#crypto-endpoint) | `crypto` |
+
+## Crypto Endpoint
+
+`crypto` is the only supported name for this endpoint.
+
 ### Input Params
 
-<!-- - `base`, `from`, or `coin`: The symbol of the currency to query
-- `quote`, `to`, or `market`: The symbol of the currency to convert to
-- `endpoint`: Optional endpoint param -->
+| Required? |   Name   |             Aliases              |             Description             | Type | Options | Default | Depends On | Not Valid With |
+| :-------: | :------: | :------------------------------: | :---------------------------------: | :--: | :-----: | :-----: | :--------: | :------------: |
+|    ✅     | currency | `base`, `coin`, `from`, `symbol` | The symbol of the currency to query |      |         |         |            |                |
 
-| Required? |           Name            |             Description             | Options | Defaults to |
-| :-------: | :-----------------------: | :---------------------------------: | :-----: | :---------: |
-|    ✅     | `base`, `from`, or `coin` | The symbol of the currency to query |         |             |
+### Example
 
-### Sample Input
+Request:
 
 ```json
 {
   "id": "1",
   "data": {
-    "base": "ETH"
+    "currency": "ETH",
+    "endpoint": "crypto"
+  },
+  "debug": {
+    "cacheKey": "hJ7N538OT46zUTHH59trC5Qbouw="
   }
 }
 ```
 
-## Sample Output
+Response:
 
 ```json
 {
   "jobRunID": "1",
-  "result": 66.5046281503906,
-  "statusCode": 200,
   "data": {
-    "result": 66.5046281503906
-  }
+    "result": 68.16959232733399
+  },
+  "result": 68.16959232733399,
+  "statusCode": 200,
+  "providerStatusCode": 200
 }
 ```
+
+---
+
+MIT License

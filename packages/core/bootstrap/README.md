@@ -2,44 +2,118 @@
 
 The core framework that every External Adapter uses.
 
+The goal of the framework is to make the overall system more efficient by using as few resources (e.g. API credits, networking traffic, CPU usage) as possible to fetch data.
+
+For more information on a specific middleware or module see its dedicated README.
+
+## Middlewares
+
+To fulfill the performance goals each External Adapter's data provider specific logic, called an `execute` function, is wrapped by middlewares that layer in additional functionality.
+
+Middlewares are first initialized to wrap the request. At runtime the execution happens in reverse order. If there is awaited code within the middleware it then happens in the original order once the `execute` function has returned.
+
+![Middleware diagram](./assets/middleware_flow.jpg?raw=true 'Middleware execution')
+
+Some examples of these are:
+
+### Caching
+
+Local cache (LRU) and Redis supported. Local cache can be used as a fallback.
+
+### Cache Warming
+
+For REST requests, cache warming is fired within the chain of observables from the redux architecture. WebSockets are treated as its own cache warming.
+
+### Batching
+
+Batching is directly tied to the caching and cache warming implementation. Each adapter that utilizes batch endpoints also implements DP specific code to handle those use cases.
+
+### Rate limiting
+
+Rate limiting is implemented in 3 parts:
+
+1. An express middleware that rate limits incoming requests and delays/throttles them.
+2. A redux middleware, named `Burst Limit`, that uses the same store that caching and batching rely on to check overall reqs per second/minute, and rejects them if they exceed a burst threshold.
+3. Another redux middleware, named `Rate Limit` with the same store that adjusts TTL according to the monthly limits.
+
+### Error Backoff
+
+If the adapter receives erroneous responses from the DP beyond a certain threshold, it rejects incoming requests until the specified time window passes.
+
+## Architecture
+
+![EA framework flow](./assets/flowchart.jpg?raw=true 'Framework flowchart')
+
+## Configuration
+
 Detailed here is optional configuration that can be provided to any EA through environment variables.
 
----
+### Table of Contents
 
-## Table of Contents
-
-1. [Server configuration](#Server-configuration)
-2. [Performance](#Performance)
-   - [Caching](#Caching)
-   - [Redis](#Redis)
-   - [Rate Limiting](#Rate-Limiting)
-     - [Provider Limits](#Provider-Limits)
-   - [Cache Warming](#Cache-Warming)
-   - [Request Coalescing](#Request-Coalescing)
-3. [Metrics](#Metrics)
-4. [Websockets](#Websockets)
+- [Chainlink External Adapter Bootstrap](#chainlink-external-adapter-bootstrap)
+  - [Middlewares](#middlewares)
+    - [Caching](#caching)
+    - [Cache Warming](#cache-warming)
+    - [Batching](#batching)
+    - [Rate limiting](#rate-limiting)
+    - [Error Backoff](#error-backoff)
+  - [Architecture](#architecture)
+  - [Configuration](#configuration)
+    - [Table of Contents](#table-of-contents)
+  - [Server configuration](#server-configuration)
+    - [Base input parameters](#base-input-parameters)
+  - [Performance](#performance)
+    - [Error back offs](#error-back-offs)
+    - [Caching](#caching-1)
+    - [Cache key](#cache-key)
+      - [Ignoring keys](#ignoring-keys)
+    - [Local cache](#local-cache)
+    - [Redis](#redis)
+    - [Rate Limiting](#rate-limiting-1)
+      - [Provider Limits](#provider-limits)
+    - [Cache Warming](#cache-warming-1)
+    - [Request Coalescing](#request-coalescing)
+  - [Metrics](#metrics)
+  - [Websockets](#websockets)
+  - [Logging Censorship](#logging-censorship)
 
 ---
 
 ## Server configuration
 
-| Required? |              Name               |                                                                                                                                                                                           Description                                                                                                                                                                                           |         Options          |     Defaults to      |
-| :-------: | :-----------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------: | :------------------: |
-|           |           `BASE_URL`            | Set a base url that is used for setting up routes on the external adapter. Ex. Typically a external adapter is served on the root, so you would make requests to `/`, setting `BASE_URL` to `/coingecko` would instead have requests made to `/coingecko`. Useful when multiple external adapters are being hosted under the same domain, and path mapping is being used to route between them. |                          |         `/`          |
-|           |            `EA_PORT`            |                                                                                                                                                                        The port to run the external adapter's server on                                                                                                                                                                         |                          |        `8080`        |
-|           |             `UUID`              |                                                                                                                                                                 A universally unique identifier that is used to identify the EA                                                                                                                                                                 |                          | (generated randomly) |
-|           |             `DEBUG`             |                                                                                                                                                                                       Toggles debug mode.                                                                                                                                                                                       |                          |       `false`        |
-|           |           `NODE_ENV`            |                                                                                                                                          Toggles development mode. When set to developement the log messages will be prettified to be more read-able.                                                                                                                                           |      `development`       |      undefined       |
-|           |           `LOG_LEVEL`           |                                                                                                                                               The [winston](https://github.com/winstonjs/winston) log level. Set to debug for full log messages.                                                                                                                                                | `info`, `debug`, `trace` |        `info`        |
-|           |          `API_TIMEOUT`          |                                                                                                                                                      The number of milliseconds a request can be pending before returning a timeout error.                                                                                                                                                      |                          |       `30000`        |
-|           |         `API_ENDPOINT`          |                                                                                                                                                                              Override the base URL within the EA.                                                                                                                                                                               |                          |    Defined in EA     |
-|           |        `WS_API_ENDPOINT`        |                                                                                                                                                                         Override the base websocket URL within the EA.                                                                                                                                                                          |                          |    Defined in EA     |
-|           |          `API_VERBOSE`          |                                                                                                                              Toggle whether the response from the EA should contain just the results or also include the full response body from the queried API.                                                                                                                               |                          |       `false`        |
-|           |     `SERVER_RATE_LIMIT_MAX`     |                                                                                                                                               The number of requests allowed per 5 seconds before further requests are rejected with a 429 error.                                                                                                                                               |                          |        `250`         |
-|           | `SERVER_SLOW_DOWN_AFTER_FACTOR` |                                                                                                                                  The amount of requests after which subsequent requests will be slowed down by a delay (as a percentage of the max requests).                                                                                                                                   |                          |        `0.8`         |
-|           |   `SERVER_SLOW_DOWN_DELAY_MS`   |                                                                                                                                                 The number of milliseconds to delay a request once the slow down factor's threshold is reached.                                                                                                                                                 |                          |        `500`         |
+| Required? |       Name        |                                                                                                                                                                                           Description                                                                                                                                                                                           |         Options          |  Defaults to  |
+| :-------: | :---------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------------: | :-----------: |
+|           |    `BASE_URL`     | Set a base url that is used for setting up routes on the external adapter. Ex. Typically a external adapter is served on the root, so you would make requests to `/`, setting `BASE_URL` to `/coingecko` would instead have requests made to `/coingecko`. Useful when multiple external adapters are being hosted under the same domain, and path mapping is being used to route between them. |                          |      `/`      |
+|           |     `EA_PORT`     |                                                                                                                                                                        The port to run the external adapter's server on                                                                                                                                                                         |                          |    `8080`     |
+|           |     `EA_HOST`     |                                                                                                                                                                         The address the EA will listen for requests on                                                                                                                                                                          |                          |     `::`      |
+|           |      `DEBUG`      |                                                                                                                                                                                       Toggles debug mode.                                                                                                                                                                                       |                          |    `false`    |
+|           |    `NODE_ENV`     |                                                                                                                                          Toggles development mode. When set to developement the log messages will be prettified to be more read-able.                                                                                                                                           |      `development`       |   undefined   |
+|           |    `LOG_LEVEL`    |                                                                                                                                               The [winston](https://github.com/winstonjs/winston) log level. Set to debug for full log messages.                                                                                                                                                | `info`, `debug`, `trace` |    `info`     |
+|           |   `API_TIMEOUT`   |                                                                                                                                                      The number of milliseconds a request can be pending before returning a timeout error.                                                                                                                                                      |                          |    `30000`    |
+|           |  `API_ENDPOINT`   |                                                                                                                                                                              Override the base URL within the EA.                                                                                                                                                                               |                          | Defined in EA |
+|           | `WS_API_ENDPOINT` |                                                                                                                                                                         Override the base websocket URL within the EA.                                                                                                                                                                          |                          | Defined in EA |
+|           |   `API_VERBOSE`   |                                                                                                                              Toggle whether the response from the EA should contain just the results or also include the full response body from the queried API.                                                                                                                               |                          |    `false`    |
+
+### Base input parameters
+
+Base input parameters are accepted for every EA
+
+| Required? | Name             | Description                                                                                           |
+| --------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
+|           | `endpoint`       | The External Adapter "endpoint" name to use.                                                          |
+|           | `resultPath`     | The path to key into the API response the retrieve the result                                         |
+|           | `overrides`      | Override the mapping of token symbols to another token symbol                                         |
+|           | `tokenOverrides` | Override the mapping of token symbols to smart contract address                                       |
+|           | `includes`       | Override the array of includes that holds additional input parameters when matching a pair of symbols |
 
 ## Performance
+
+### Error back offs
+
+Repeated requests that return errors are backed off from:
+| Required? | Name | Description | Options | Defaults to |
+| :-------: | :-------------------: | :-------------------------------------: | :-----: | :---------: |
+| | `ERROR_CAPACITY` | Maximum amount of time a request can error per minute before being backed off from | | `2` |
 
 ### Caching
 
@@ -55,14 +129,15 @@ To configure caching these environment variables are available:
 | :-------: | :-----------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------: | :-------------------------------------------------------------------: |
 |           |      `CACHE_ENABLED`      |                                                                                                                                   Toggle caching.                                                                                                                                   |                    |                                `true`                                 |
 |           |       `CACHE_TYPE`        |                                                                                                                          Which cache type should be used.                                                                                                                           | `local` or `redis` |                                `local`                                |
-|           |     `CACHE_KEY_GROUP`     |                                      Set to specific group ID to group the cached data, for this adapter, with other instances in the same group. Applicable only in remote cache scenarios, where multiple adapter instances share the cache.                                      |                    |                          UUID of the adapter                          |
+|           |     `CACHE_KEY_GROUP`     |                                      Set to specific group ID to group the cached data, for this adapter, with other instances in the same group. Applicable only in remote cache scenarios, where multiple adapter instances share the cache.                                      |                    |                              `undefined`                              |
 |           | `CACHE_KEY_IGNORED_PROPS` |                                                                                Keys to ignore while deriving the cache key, delimited by `,`. The key set will be added to the default ignored keys                                                                                 |                    | `['id', 'maxAge', 'meta', 'rateLimitMaxAge', 'debug', 'metricsMeta']` |
 |           |      `CACHE_MAX_AGE`      | Maximum age in ms. Items are not pro-actively pruned out as they age, but if you try to get an item that is too old, it'll drop it and return undefined instead of giving it to you. If set to `0` the default will be used, and if set to `< 0` entries will not persist in cache. |                    |                         `90000` (1.5 minutes)                         |
 |           |      `CACHE_MIN_AGE`      |                                                                                                                                 Minimum age in ms.                                                                                                                                  |                    |                         `30000` (30 seconds)                          |
 
 ### Cache key
 
-The cache key of a stored request is derived by hashing the input object, using the SHA1 hash function, while by default ignoring keys `['id', 'maxAge', 'meta', 'rateLimitMaxAge', 'debug']`. So for example these few requests will derive the same key:
+The cache key of a stored request is constructed by cache group key concatenated with hashed input object using `:` symbol. The cache group key is a combination of EA name and optional `CACHE_KEY_GROUP` environment variable, for example `BINANCE-CUSTOM_KEY`.
+The input object is hashed using the SHA1 hash function, while by default ignoring keys `['id', 'maxAge', 'meta', 'rateLimitMaxAge', 'debug']`. So for example these few requests will derive the same key:
 
 - `{"id": 1, "data": {"base":"LINK", "quote": "USD"}}`
 - `{"id": 2, "data": {"base":"LINK", "quote": "USD", "maxAge": 10000}}`
@@ -92,7 +167,7 @@ For example, if the `CACHE_KEY_IGNORED_PROPS=timestamp` is set, these requests w
 | :-------: | :----------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------: | :-----: | :---------: |
 |           |   `CACHE_REDIS_CONNECTION_TIMEOUT`   |                                             Timeout to end socket connection due to inactivity (ms)                                             |         |   `15000`   |
 |           |          `CACHE_REDIS_HOST`          |                                                         IP address of the Redis server.                                                         |         | `127.0.0.1` |
-|           |    `CACHE_REDIS_MAX_QUEUED_ITEMS`    |                                              Maximum length of the client's internal command queue                                              |         |     100     |
+|           |    `CACHE_REDIS_MAX_QUEUED_ITEMS`    |                                              Maximum length of the client's internal command queue                                              |         |     500     |
 |           | `CACHE_REDIS_MAX_RECONNECT_COOLDOWN` |                                              Max cooldown time before attempting to reconnect (ms)                                              |         |   `3000`    |
 |           |          `CACHE_REDIS_PORT`          |                                                            Port of the Redis server.                                                            |         |   `6379`    |
 |           |          `CACHE_REDIS_PATH`          |                                                   The UNIX socket string of the Redis server.                                                   |         |  undefined  |
@@ -200,12 +275,11 @@ When enabled, a metrics endpoint is opened on `/metrics`, which can be prepended
 
 \*Please note that this feature is EXPERIMENTAL.
 
-| Required? |              Name              |                                  Description                                   | Options | Defaults to |
-| :-------: | :----------------------------: | :----------------------------------------------------------------------------: | :-----: | :---------: |
-|           | `EXPERIMENTAL_METRICS_ENABLED` |                  Set to `true` to enable metrics collection.                   |         |   `false`   |
-|           |     `METRICS_USE_BASE_URL`     | Set to "true" to have the internal metrics endpoint use the supplied base url. |         |   `false`   |
-|           |         `METRICS_PORT`         |                   The port the metrics endpoint is served on                   |         |   `9080`    |
-|           |         `METRICS_NAME`         |                    set to apply a label of to each metric.                     |         |  undefined  |
+| Required? |          Name          |                                  Description                                   | Options | Defaults to |
+| :-------: | :--------------------: | :----------------------------------------------------------------------------: | :-----: | :---------: |
+|           |   `METRICS_ENABLED`    |                          Enables metrics collection.                           |         |   `true`    |
+|           | `METRICS_USE_BASE_URL` | Set to "true" to have the internal metrics endpoint use the supplied base url. |         |   `false`   |
+|           |     `METRICS_PORT`     |                   The port the metrics endpoint is served on                   |         |   `9080`    |
 
 To run Prometheus and Grafana with development setup:
 
@@ -230,3 +304,11 @@ From the moment the subscription is confirmed, the adapter will start receiving 
 |           | `WS_SUBSCRIPTION_UNRESPONSIVE_TTL` | Unresponsive subscription expiration time in ms. If the adapter doesn't receive messages from an open subscription during this time, a resubscription will be tried. |         |  `120000`   |
 
 \*For the websockets to be effective, **caching needs to be enabled**
+
+## Logging Censorship
+
+The framework globally censors logs to avoid leaking sensitive information. To determine what to redact, a pre-determined list of sensitive env vars (i.e. `API_KEY`) is used to compile a map of these env vars to their sensitive values.
+
+RegExp's of the sensitive values are then used to find matches during logging to be replaced by `[{ENV_VAR REDACTED}]` (i.e. `[API_KEY REDACTED]`).
+
+In certain scenarios, env var values are altered by an adapter such as Base64 encoding. Pino's built in redact capabilities are used to censor paths in these cases.

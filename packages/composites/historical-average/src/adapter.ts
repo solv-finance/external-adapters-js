@@ -1,41 +1,78 @@
-import { AdapterError, Requester, Validator } from '@chainlink/ea-bootstrap'
-import { AdapterResponse, ExecuteWithConfig, ExecuteFactory } from '@chainlink/types'
+import {
+  AdapterError,
+  AdapterConfigError,
+  AdapterInputError,
+  Requester,
+  Validator,
+} from '@chainlink/ea-bootstrap'
+import {
+  AdapterResponse,
+  ExecuteWithConfig,
+  ExecuteFactory,
+  InputParameters,
+} from '@chainlink/ea-bootstrap'
 import { getPriceProvider } from './dataProvider'
 import { Config, makeConfig } from './config'
 import { Decimal } from 'decimal.js'
 
 Decimal.set({ precision: 100 })
 
-const customParams = {
-  from: ['base', 'from', 'coin'],
-  to: ['quote', 'to', 'market'],
-  source: false,
-  fromDate: false,
-  toDate: false,
-  days: false,
-  interval: false,
+export type TInputParameters = {
+  from: string
+  to: string
+  source?: string
+  fromDate?: string
+  toDate?: string
+  days?: string
+  interval?: string
 }
 
-export const execute: ExecuteWithConfig<Config> = async (
+const inputParameters: InputParameters<TInputParameters> = {
+  from: {
+    required: true,
+    aliases: ['base', 'coin'],
+  },
+  to: {
+    required: true,
+    aliases: ['quote', 'market'],
+  },
+  source: {
+    required: false,
+  },
+  fromDate: {
+    required: false,
+  },
+  toDate: {
+    required: false,
+  },
+  days: {
+    required: false,
+  },
+  interval: {
+    required: false,
+  },
+}
+
+export const execute: ExecuteWithConfig<Config, TInputParameters> = async (
   input,
   _,
   config,
 ): Promise<AdapterResponse> => {
-  const validator = new Validator(input, customParams)
+  const validator = new Validator(input, inputParameters)
 
-  const jobRunID = validator.validated.jobRunID
+  const jobRunID = validator.validated.id
 
   const from = validator.validated.data.from
   const to = validator.validated.data.to
   const source = (validator.validated.data.source || config.defaultSource || '').toLowerCase()
   if (source === '') {
-    throw new AdapterError({
+    throw new AdapterConfigError({
       statusCode: 400,
       message: 'No source provided in request or the DEFAULT_SOURCE env var!',
     })
   }
   if (!(source in config.sources)) {
-    throw new AdapterError({
+    throw new AdapterConfigError({
       statusCode: 400,
       message: `The ADAPTER_URL has not been configured for source ${source}`,
     })
@@ -44,11 +81,18 @@ export const execute: ExecuteWithConfig<Config> = async (
   const fromDateInput = validator.validated.data.fromDate
   const toDateInput = validator.validated.data.toDate
   const days = validator.validated.data.days
-  const interval = validator.validated.data.interval
+  const interval = validator.validated.data.interval as string
+  // TODO: non-nullable default types
 
   const { fromDate, toDate } = getFromToDates(fromDateInput, toDateInput, days)
 
-  const provider = getPriceProvider(source, jobRunID, config.sources[source].api)
+  const apiOptions = config.sources[source].api
+  if (!apiOptions)
+    throw new AdapterError({
+      statusCode: 400,
+      message: `${source} configuration not found`,
+    })
+  const provider = getPriceProvider(source, jobRunID, apiOptions)
   const providerResponse = await provider(from, to, fromDate, toDate, interval)
   const result = providerResponse
     .reduce((sum, elem) => sum.add(elem.price), new Decimal(0))
@@ -96,7 +140,7 @@ export const getFromToDates = (
     const fromDate = new Date(from)
     const toDate = new Date(to)
     if (fromDate >= toDate) {
-      throw new AdapterError({
+      throw new AdapterInputError({
         statusCode: 400,
         message: 'The "fromDate" must be before the "toDate"',
       })
@@ -104,14 +148,14 @@ export const getFromToDates = (
 
     return { fromDate, toDate }
   } else if (!days) {
-    throw new AdapterError({
+    throw new AdapterInputError({
       statusCode: 400,
       message: 'Missing either from/to dates and days param',
     })
   }
   const numDays = Number(days)
   if (numDays <= 0) {
-    throw new AdapterError({
+    throw new AdapterInputError({
       statusCode: 400,
       message: 'The days param is less than or equal to 0',
     })
@@ -127,12 +171,12 @@ export const getFromToDates = (
     return { fromDate, toDate }
   }
 
-  throw new AdapterError({
+  throw new AdapterInputError({
     statusCode: 400,
     message: 'Missing both from/to dates',
   })
 }
 
-export const makeExecute: ExecuteFactory<Config> = (config) => {
+export const makeExecute: ExecuteFactory<Config, TInputParameters> = (config) => {
   return async (request, context) => execute(request, context, config || makeConfig())
 }

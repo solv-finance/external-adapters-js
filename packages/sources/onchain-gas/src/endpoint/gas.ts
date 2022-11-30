@@ -1,10 +1,17 @@
-import { Validator, Logger, Requester } from '@chainlink/ea-bootstrap'
-import { Config, ExecuteWithConfig, InputParameters } from '@chainlink/types'
+import {
+  Validator,
+  Logger,
+  Requester,
+  AxiosRequestConfig,
+  AdapterConfigError,
+} from '@chainlink/ea-bootstrap'
+import type { Config, ExecuteWithConfig, InputParameters } from '@chainlink/ea-bootstrap'
 import { DEFAULT_NUM_BLOCKS, MAX_BLOCKS_TO_QUERY } from '../config'
 
 export const supportedEndpoints = ['gas']
 
-export const inputParameters: InputParameters = {
+export type TInputParameters = { numBlocks: number; blockIdx: number }
+export const inputParameters: InputParameters<TInputParameters> = {
   numBlocks: {
     required: false,
     default: 1,
@@ -21,10 +28,10 @@ export const inputParameters: InputParameters = {
 
 export const execute: ExecuteWithConfig<Config> = async (request) => {
   new Validator(request, inputParameters)
-
-  throw Error(
-    'The OnChain Gas adapter does not support making HTTP requests. Make sure WS is enabled in the adapter configuration.',
-  )
+  throw new AdapterConfigError({
+    message:
+      'The OnChain Gas adapter does not support making HTTP requests. Make sure WS is enabled in the adapter configuration.',
+  })
 }
 
 interface Block {
@@ -64,7 +71,7 @@ const getBlock = async (
   jsonrpc: string,
   config: Config,
 ): Promise<Block> => {
-  const requestConfig = {
+  const requestConfig: AxiosRequestConfig = {
     url: config.rpcUrl,
     data: {
       jsonrpc: jsonrpc,

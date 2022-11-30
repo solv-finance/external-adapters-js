@@ -1,12 +1,10 @@
 import { expose } from '@chainlink/ea-bootstrap'
 import { endpointSelector, makeExecute } from './adapter'
-import { makeConfig } from './config'
+import { makeConfig, NAME } from './config'
+import rateLimit from './config/limits.json'
+import * as endpoints from './endpoint'
 
-const NAME = 'ANYBLOCK'
+const adapterContext = { name: NAME, rateLimit }
 
-export = {
-  NAME,
-  makeExecute,
-  makeConfig,
-  ...expose(NAME, makeExecute(), undefined, endpointSelector),
-}
+const { server } = expose(adapterContext, makeExecute(), undefined, endpointSelector)
+export { NAME, makeExecute, makeConfig, server, endpoints }
